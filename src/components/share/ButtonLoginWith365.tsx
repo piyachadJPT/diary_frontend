@@ -42,6 +42,12 @@ export default function ButtonLoginWith365() {
             }
         } catch (error) {
             console.error("Login API Error:", error)
+            await Swal.fire({
+                icon: "error",
+                text: `เกิดข้อผิดพลาดในการเข้าสู่ระบบ!`,
+                showConfirmButton: false,
+                timer: 1500,
+            });
         }
     }
 

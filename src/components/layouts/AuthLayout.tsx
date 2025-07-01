@@ -1,9 +1,6 @@
 import React, { ReactNode } from 'react';
 import ThemeRegistry from "../share/ThemeRegistry";
 
-import "@/app/globals.css";
-
-
 interface AuthLayoutProps {
     children: ReactNode;
 }
