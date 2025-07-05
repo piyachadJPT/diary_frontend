@@ -9,7 +9,6 @@ import {
     Typography,
     alpha
 } from '@mui/material'
-import Image from 'next/image'
 
 export default function Home() {
 
@@ -18,11 +17,11 @@ export default function Home() {
             <Box
                 sx={{
                     minHeight: '100vh',
-                    background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+                    background: '#f5f5f5',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    py: 4
+                    py: 4,
                 }}
             >
                 <Container maxWidth="lg">
@@ -31,14 +30,15 @@ export default function Home() {
                         sx={{
                             borderRadius: 6,
                             overflow: 'hidden',
-                            border: '1px solid',
-                            borderColor: alpha('#fdd835', 0.08),
+                            border: '2px solid #ccc',
+                            borderColor: alpha('#000', 0.08),
                             maxWidth: '1000px',
                             margin: '0 auto',
                             bgcolor: 'rgba(255, 255, 255, 0.95)',
                             backdropFilter: 'blur(10px)',
                             minHeight: '600px',
-                            display: 'flex'
+                            display: 'flex',
+
                         }}
                     >
                         <Grid container sx={{ minHeight: '100%', flex: 1 }}>
@@ -64,7 +64,7 @@ export default function Home() {
                                         variant="h3"
                                         component="h1"
                                         sx={{
-                                            fontWeight: 300,
+                                            fontWeight: 600,
                                             color: '#2c2c2c',
                                             mb: 1,
                                             fontSize: { xs: '2rem', md: '2.5rem' }
@@ -76,7 +76,7 @@ export default function Home() {
                                     <Typography
                                         variant="body1"
                                         sx={{
-                                            color: alpha('#2c2c2c', 0.7),
+                                            color: alpha('#9e9e9e', 0.7),
                                             mb: 6,
                                             fontSize: '1rem',
                                             fontWeight: 400
@@ -97,7 +97,7 @@ export default function Home() {
                                     alignItems: 'stretch',
                                     justifyContent: 'stretch',
                                     position: 'relative',
-                                    background: 'linear-gradient(135deg, #fdd835 0%, #ffeb3b 20%, #ffc107 40%, #ff9800 60%, #f57c00 80%, #e65100 100%)',
+                                    background: '#ffffff',
                                     overflow: 'hidden',
                                     minHeight: '100%'
                                 }}
@@ -120,7 +120,7 @@ export default function Home() {
                                             width: '200px',
                                             height: '200px',
                                             borderRadius: '50%',
-                                            background: 'rgba(255, 255, 255, 0.15)',
+                                            background: 'rgba(0, 0, 0, 0.02)',
                                             top: '-50px',
                                             right: '-50px',
                                             animation: 'float 6s ease-in-out infinite'
@@ -132,7 +132,7 @@ export default function Home() {
                                             width: '150px',
                                             height: '150px',
                                             borderRadius: '50%',
-                                            background: 'rgba(255, 255, 255, 0.1)',
+                                            background: 'rgba(0, 0, 0, 0.02)',
                                             bottom: '-25px',
                                             left: '-25px',
                                             animation: 'float 8s ease-in-out infinite reverse'
@@ -144,27 +144,27 @@ export default function Home() {
                                             width: '100px',
                                             height: '100px',
                                             borderRadius: '50%',
-                                            background: 'rgba(255, 255, 255, 0.08)',
+                                            background: 'rgba(0, 0, 0, 0.02)',
                                             top: '30%',
                                             left: '20%',
                                             animation: 'float 10s ease-in-out infinite'
                                         }}
                                     />
 
-                                    <Image
+                                    <Box
+                                        component="img"
                                         src="/dose.png"
                                         alt="login-image"
-                                        width={400}
-                                        height={300}
-                                        style={{
+                                        sx={{
                                             maxWidth: '80%',
+                                            maxHeight: '300px',
+                                            width: 'auto',
                                             height: 'auto',
                                             objectFit: 'contain',
                                             position: 'relative',
                                             zIndex: 1,
-                                            filter: 'brightness(1.1) drop-shadow(0 10px 20px rgba(0,0,0,0.1))'
+                                            filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.1))'
                                         }}
-                                        priority={true}
                                     />
                                 </Box>
 

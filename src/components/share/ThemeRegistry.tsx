@@ -14,7 +14,7 @@ const theme = createTheme({
         },
     },
     typography: {
-        fontFamily: '"Noto Sans Thai", sans-serif',
+        fontFamily: '"Kanit", sans-serif',
     },
     breakpoints: {
         values: {

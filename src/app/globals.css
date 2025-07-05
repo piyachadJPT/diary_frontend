@@ -1,1 +1,15 @@
 @import "tailwindcss";
+@import "@fontsource/kanit/index.css";
+
+body {
+  font-family: 'Kanit', sans-serif;
+}
+
+.quill-editor {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.quill-editor .ql-container {
+  min-height: 150px;
+}

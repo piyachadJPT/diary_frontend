@@ -1,24 +1,32 @@
 'use client'
-
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Button } from '@mui/material'
 import { Microsoft } from '@mui/icons-material'
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2'
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
 
 export default function ButtonLoginWith365() {
-    const { data: session } = useSession()
+    const { data: session, status } = useSession()
     const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
+    const hasProcessedLogin = useRef(false)
 
     useEffect(() => {
-        if (session?.user?.email) {
-            fetchLogin(session.user.email)
-        }
-    }, [session])
+        if (status === 'authenticated' &&
+            session?.user?.email &&
+            !isLoading &&
+            !hasProcessedLogin.current) {
 
-    const fetchLogin = async (email: string) => {
+            hasProcessedLogin.current = true
+            handleLogin(session.user.email)
+        }
+    }, [session?.user?.email, status])
+
+    const handleLogin = async (email: string) => {
+        setIsLoading(true)
+
         try {
             const res = await fetchWithBase('/api/auth/microsoft', {
                 method: 'POST',
@@ -26,32 +34,54 @@ export default function ButtonLoginWith365() {
                 body: JSON.stringify({ email }),
             })
 
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`)
+            }
+
             const data = await res.json()
 
-            await Swal.fire({
-                icon: "success",
-                text: `ยินดีต้อนรับกลับ!`,
-                showConfirmButton: false,
-                timer: 1500,
-            });
-
-            if (data.role === 'Student') {
-                router.push('/diary')
-            } else if (data.role === 'Teacher') {
-                router.push('/teacher')
+            if (!data.role) {
+                throw new Error('No role returned from API')
             }
-        } catch (error) {
-            console.error("Login API Error:", error)
+
             await Swal.fire({
-                icon: "error",
-                text: `เกิดข้อผิดพลาดในการเข้าสู่ระบบ!`,
+                icon: 'success',
+                text: 'ยินดีต้อนรับกลับ!',
                 showConfirmButton: false,
                 timer: 1500,
-            });
+            })
+
+            const now = new Date()
+            const year = now.getFullYear()
+            const month = String(now.getMonth() + 1).padStart(2, '0')
+            const day = String(now.getDate()).padStart(2, '0')
+            const dateString = `${year}-${month}-${day}`
+
+            const userRole = data.role.toLowerCase()
+
+            if (userRole === 'student') {
+                router.push(`/diary/${dateString}`)
+            } else if (userRole === 'teacher') {
+                router.push('/teacher')
+            } else {
+                throw new Error(`Unknown role: ${data.role}`)
+            }
+
+        } catch (error) {
+            console.error('Login API Error:', error)
+            await Swal.fire({
+                icon: 'error',
+                text: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ!',
+                showConfirmButton: false,
+                timer: 1500,
+            })
+        } finally {
+            setIsLoading(false)
         }
     }
 
     const handleSignIn = () => {
+        if (isLoading) return
         signIn("azure-ad")
     }
 
@@ -60,7 +90,8 @@ export default function ButtonLoginWith365() {
             onClick={handleSignIn}
             variant="contained"
             size="large"
-            startIcon={<Microsoft />}
+            // startIcon={<Microsoft />}
+            disabled={isLoading || status === 'loading'}
             sx={{
                 width: '100%',
                 py: 1.5,
@@ -69,23 +100,28 @@ export default function ButtonLoginWith365() {
                 textTransform: 'none',
                 fontSize: '1rem',
                 fontWeight: 500,
-                background: 'linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)',
+                background: '#673ab7',
                 color: 'white',
                 border: 'none',
                 boxShadow: '0 8px 32px rgba(156, 39, 176, 0.3)',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                    background: 'linear-gradient(135deg, #8e24aa 0%, #5e35b1 100%)',
+                    background: '#5e35b1',
                     boxShadow: '0 12px 40px rgba(156, 39, 176, 0.4)',
                     transform: 'translateY(-2px)'
                 },
                 '&:active': {
                     transform: 'translateY(0px)',
                     boxShadow: '0 6px 24px rgba(156, 39, 176, 0.3)'
+                },
+                '&:disabled': {
+                    background: '#cccccc',
+                    color: '#666666',
+                    boxShadow: 'none'
                 }
             }}
         >
-            เข้าสู่ระบบด้วย UP Account
+            {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบด้วย UP Account'}
         </Button>
     )
 }

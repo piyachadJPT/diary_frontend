@@ -1,0 +1,8 @@
+.quillEditor {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.quillEditor .ql-container {
+  min-height: 150px;
+}
