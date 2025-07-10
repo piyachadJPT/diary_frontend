@@ -5,7 +5,6 @@ import {
     Box,
     Container,
     Paper,
-    Grid,
     Typography,
     alpha
 } from '@mui/material'
@@ -38,19 +37,20 @@ export default function Home() {
                             backdropFilter: 'blur(10px)',
                             minHeight: '600px',
                             display: 'flex',
-
                         }}
                     >
-                        <Grid container sx={{ minHeight: '100%', flex: 1 }}>
-                            <Grid
-                                item
-                                xs={12}
-                                md={6}
+                        <Box sx={{
+                            display: 'flex',
+                            width: '100%',
+                            flexDirection: { xs: 'column', md: 'row' }
+                        }}>
+                            <Box
                                 sx={{
+                                    flex: 1,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    p: 6
+                                    p: 6,
                                 }}
                             >
                                 <Box
@@ -87,12 +87,11 @@ export default function Home() {
 
                                     <ButtonLoginWith365 />
                                 </Box>
-                            </Grid>
+                            </Box>
 
-                            <Grid
-                                item
-                                md={6}
+                            <Box
                                 sx={{
+                                    flex: 1,
                                     display: { xs: 'none', md: 'flex' },
                                     alignItems: 'stretch',
                                     justifyContent: 'stretch',
@@ -174,8 +173,8 @@ export default function Home() {
                                         50% { transform: translateY(-20px); }
                                     }
                                 `}</style>
-                            </Grid>
-                        </Grid>
+                            </Box>
+                        </Box>
                     </Paper>
                 </Container>
             </Box>

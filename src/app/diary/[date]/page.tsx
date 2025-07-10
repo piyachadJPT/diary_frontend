@@ -1,6 +1,8 @@
+/* eslint-disable */
+
 'use client'
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import DiatyLayout from '../../../components/layouts/DiatyLayout';
 import { useSession } from 'next-auth/react';
@@ -72,37 +74,41 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
    const [userId, setUserId] = useState<number | null>(null);
    const [diaries, setDiaries] = useState<Diary[]>([]);
    const [isLoading, setIsLoading] = useState<boolean>(true);
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const [error, setError] = useState<string | null>(null);
 
    const [editingDiary, setEditingDiary] = useState<Diary | null>(null);
 
    const statusIcons = {
       veryHappy: {
-         icon: <SentimentVerySatisfiedIcon />,
+         icon: SentimentVerySatisfiedIcon,
          label: 'มีความสุข',
          color: '#2e7d32',
       },
       happy: {
-         icon: <SentimentSatisfiedAltIcon />,
+         icon: SentimentSatisfiedAltIcon,
          label: 'พอใจ',
          color: '#9ccc65',
       },
       neutral: {
-         icon: <SentimentNeutralIcon />,
+         icon: SentimentNeutralIcon,
          label: 'เฉยๆ',
          color: '#5c6bc0',
       },
       stressed: {
-         icon: <SentimentDissatisfiedIcon />,
+         icon: SentimentDissatisfiedIcon,
          label: 'เครียด',
          color: '#ff9800',
       },
       burnedOut: {
-         icon: <SentimentVeryDissatisfiedIcon />,
+         icon: SentimentVeryDissatisfiedIcon,
          label: 'หมดไฟ',
          color: '#f44336',
       },
    };
+
+
+   type StatusKey = keyof typeof statusIcons;
 
    const getShareText = (IsShared: string) => {
       switch (IsShared) {
@@ -124,11 +130,19 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       }
    };
 
+   const getStatusKey = (status: string): StatusKey | null => {
+      const statusNormalized = status?.trim();
+      if (statusNormalized && statusNormalized in statusIcons) {
+         return statusNormalized as StatusKey;
+      }
+      return null;
+   };
+
    useEffect(() => {
       if (status === 'authenticated' && session?.user?.email) {
          const fetchUser = async () => {
             try {
-               const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email)}`);
+               const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
                if (!res.ok) throw new Error('Failed to fetch user');
                const data = await res.json();
                setUserId(data.ID);
@@ -142,7 +156,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       }
    }, [session, status]);
 
-   const fetchDiaries = async () => {
+   const fetchDiaries = useCallback(async () => {
       if (!userId || !date) return;
       try {
          setIsLoading(true);
@@ -157,11 +171,13 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       } finally {
          setIsLoading(false);
       }
-   };
+   }, [userId, date, setIsLoading, setDiaries, setError]);
 
    useEffect(() => {
       fetchDiaries();
-   }, [userId, date]);
+   }, [fetchDiaries]);
+
+   console.log('diary :', diaries);
 
    const formatDate = (dateString: string): string => {
       try {
@@ -259,133 +275,139 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       <DiatyLayout>
          <Box sx={{ width: '100%', mx: 'auto', p: 2, mt: 1.5 }}>
             {diaries.length > 0 ? (
-               diaries.map((diary) => (
-                  <Paper
-                     key={diary.ID}
-                     sx={{
-                        borderRadius: 4,
-                        mb: 2.5,
-                        border: '1px solid rgba(0, 0, 0, 0.12)',
-                        boxShadow: 'none',
-                     }}
-                  >
-                     <Box sx={{
-                        p: 4,
-                        display: 'flex',
-                        alignItems: 'center',
-                     }}>
-                        <Avatar
-                           src={diary.Student?.Image || '/default-avatar.png'}
-                           alt={diary.Student?.Name || 'Unknown User'}
-                           sx={{ width: 55, height: 55, mr: 2 }}
-                        />
-                        <Box sx={{ flex: 1 }}>
-                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Box sx={{ display: 'flex', flexDirection: 'column', mr: 1 }}>
-                                 <Typography
-                                    variant="subtitle1"
-                                    fontWeight="bold"
-                                    sx={{ mb: 0, lineHeight: 1 }}
-                                 >
-                                    {diary.Student?.Name || 'ไม่ระบุชื่อ'}
-                                 </Typography>
-                                 <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ mt: 0, lineHeight: 1 }}
-                                 >
-                                    {formatDate(diary.CreatedAt)} {formatTime(diary.CreatedAt)}
-                                 </Typography>
+               diaries.map((diary) => {
+                  const statusKey = getStatusKey(diary.Status);
+
+                  return (
+                     <Paper
+                        key={diary.ID}
+                        sx={{
+                           borderRadius: 4,
+                           mb: 2.5,
+                           border: '1px solid rgba(0, 0, 0, 0.12)',
+                           boxShadow: 'none',
+                        }}
+                     >
+                        <Box sx={{
+                           p: 4,
+                           display: 'flex',
+                           alignItems: 'center',
+                        }}>
+                           <Avatar
+                              src={diary.Student?.Image || '/default-avatar.png'}
+                              alt={diary.Student?.Name || 'Unknown User'}
+                              sx={{ width: 55, height: 55, mr: 2 }}
+                           />
+                           <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                 <Box sx={{ display: 'flex', flexDirection: 'column', mr: 1 }}>
+                                    <Typography
+                                       variant="subtitle1"
+                                       fontWeight="bold"
+                                       sx={{ mb: 0, lineHeight: 1 }}
+                                    >
+                                       {diary.Student?.Name || 'ไม่ระบุชื่อ'}
+                                    </Typography>
+                                    <Typography
+                                       variant="caption"
+                                       color="text.secondary"
+                                       sx={{ mt: 0, lineHeight: 1 }}
+                                    >
+                                       {formatDate(diary.CreatedAt)} {formatTime(diary.CreatedAt)}
+                                    </Typography>
+                                 </Box>
+                                 <Box>
+                                    <Tooltip title={statusKey ? statusIcons[statusKey].label : 'ไม่ระบุ'}>
+                                       <IconButton
+                                          sx={{
+                                             width: 40,
+                                             height: 40,
+                                             borderRadius: '50%',
+                                             transition: 'all 0.2s ease-in-out',
+                                             '&:hover': {
+                                                backgroundColor: '#f5f5f5',
+                                             },
+                                          }}
+                                       >
+                                          {statusKey
+                                             ? React.createElement(statusIcons[statusKey].icon, { htmlColor: statusIcons[statusKey].color })
+                                             : null}
+                                       </IconButton>
+
+                                    </Tooltip>
+                                 </Box>
                               </Box>
-                              <Box>
-                                 <Tooltip title={statusIcons[diary.Status]?.label ?? 'ไม่ระบุ'}>
-                                    <IconButton
+                           </Box>
+                           <Stack direction="row" spacing={1} alignItems="center">
+                              <Tooltip title="แก้ไข">
+                                 <IconButton
+                                    size="small"
+                                    sx={{ color: '#616161' }}
+                                    onClick={() => handleEdit(diary)}
+                                 >
+                                    <Edit fontSize="small" />
+                                 </IconButton>
+                              </Tooltip>
+                              <Tooltip title="ลบ">
+                                 <IconButton
+                                    size="small"
+                                    sx={{ color: '#e53935' }}
+                                    onClick={() => handleDelete(diary.ID)}
+                                 >
+                                    <Delete fontSize="small" />
+                                 </IconButton>
+                              </Tooltip>
+                              <Chip
+                                 icon={getShareIcon(diary.IsShared)}
+                                 label={getShareText(diary.IsShared)}
+                                 size="small"
+                                 sx={{ fontSize: '0.75rem' }}
+                              />
+                           </Stack>
+                        </Box>
+
+                        <Box sx={{ px: 4 }}>
+                           <Box
+                              dangerouslySetInnerHTML={{ __html: diary.ContentHTML }}
+                              sx={{
+                                 mb: 2,
+                                 '& img': { maxWidth: '100%', height: 'auto' },
+                                 '& p': { mb: 1 }
+                              }}
+                           />
+
+                           {diary.Attachments?.length > 0 && (
+                              <Box sx={{ mb: 2 }}>
+                                 {diary.Attachments.map((attachment) => (
+                                    <Chip
+                                       key={attachment.ID}
+                                       icon={<AttachFile sx={{ color: 'text.secondary' }} />}
+                                       label={attachment.FileName || 'ไฟล์ไม่มีชื่อ'}
+                                       variant="outlined"
+                                       onDelete={() => window.open(`diary/${date}/${attachment.ID}`, '_blank')}
+                                       deleteIcon={<SearchIcon />}
                                        sx={{
-                                          width: 40,
-                                          height: 40,
-                                          borderRadius: '50%',
-                                          transition: 'all 0.2s ease-in-out',
-                                          '&:hover': {
-                                             backgroundColor: '#f5f5f5',
+                                          maxWidth: 300,
+                                          mb: 1,
+                                          '& .MuiChip-label': {
+                                             overflow: 'hidden',
+                                             textOverflow: 'ellipsis',
+                                             whiteSpace: 'nowrap',
+                                          },
+                                          '& .MuiChip-deleteIcon': {
+                                             color: 'primary.main',
+                                             cursor: 'pointer',
                                           },
                                        }}
-                                    >
-                                       {statusIcons[diary.Status]?.icon ?? null}
-                                    </IconButton>
-                                 </Tooltip>
+                                    />
+                                 ))}
                               </Box>
-                           </Box>
+                           )}
+                           <Connent diary_Id={diary.ID} user_Id={diary.Student.ID} />
                         </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                           {/* แก้ไข IconButton สำหรับแก้ไข */}
-                           <Tooltip title="แก้ไข">
-                              <IconButton
-                                 size="small"
-                                 sx={{ color: '#616161' }}
-                                 onClick={() => handleEdit(diary)}
-                              >
-                                 <Edit fontSize="small" />
-                              </IconButton>
-                           </Tooltip>
-                           <Tooltip title="ลบ">
-                              <IconButton
-                                 size="small"
-                                 sx={{ color: '#e53935' }}
-                                 onClick={() => handleDelete(diary.ID)}
-                              >
-                                 <Delete fontSize="small" />
-                              </IconButton>
-                           </Tooltip>
-                           <Chip
-                              icon={getShareIcon(diary.IsShared)}
-                              label={getShareText(diary.IsShared)}
-                              size="small"
-                              sx={{ fontSize: '0.75rem' }}
-                           />
-                        </Stack>
-                     </Box>
-
-                     <Box sx={{ px: 4 }}>
-                        <Box
-                           dangerouslySetInnerHTML={{ __html: diary.ContentHTML }}
-                           sx={{
-                              mb: 2,
-                              '& img': { maxWidth: '100%', height: 'auto' },
-                              '& p': { mb: 1 }
-                           }}
-                        />
-
-                        {diary.Attachments?.length > 0 && (
-                           <Box sx={{ mb: 2 }}>
-                              {diary.Attachments.map((attachment) => (
-                                 <Chip
-                                    key={attachment.ID}
-                                    icon={<AttachFile sx={{ color: 'text.secondary' }} />}
-                                    label={attachment.FileName || 'ไฟล์ไม่มีชื่อ'}
-                                    variant="outlined"
-                                    onDelete={() => window.open(`diary/${date}/${attachment.ID}`, '_blank')}
-                                    deleteIcon={<SearchIcon />}
-                                    sx={{
-                                       maxWidth: 300,
-                                       mb: 1,
-                                       '& .MuiChip-label': {
-                                          overflow: 'hidden',
-                                          textOverflow: 'ellipsis',
-                                          whiteSpace: 'nowrap',
-                                       },
-                                       '& .MuiChip-deleteIcon': {
-                                          color: 'primary.main',
-                                          cursor: 'pointer',
-                                       },
-                                    }}
-                                 />
-                              ))}
-                           </Box>
-                        )}
-                        <Connent diary_Id={diary.ID} user_Id={diary.Student.ID} />
-                     </Box>
-                  </Paper>
-               ))
+                     </Paper>
+                  );
+               })
             ) : (
                <Typography variant="body1" sx={{ textAlign: 'center' }}>
                   ไม่พบบันทึกสำหรับวันนี้

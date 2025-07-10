@@ -91,7 +91,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
    const { data: session } = useSession();
    const [open, setOpen] = useState(false);
    const [status, setStatus] = useState('veryHappy');
-   const [shareAnchor, setShareAnchor] = useState(null);
+   const [shareAnchor, setShareAnchor] = React.useState<HTMLElement | null>(null);
    const [shareOption, setShareOption] = useState('everyone');
    const [content, setContent] = useState('');
    const [contentDelta, setContentDelta] = useState('');
@@ -164,15 +164,16 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
       setStatus(newStatus);
    };
 
-   const handleShareClick = (event) => {
+   const handleShareClick = (event: React.MouseEvent<HTMLElement>) => {
       setShareAnchor(event.currentTarget);
    };
+
 
    const handleShareClose = () => {
       setShareAnchor(null);
    };
 
-   const handleShareSelect = (option) => {
+   const handleShareSelect = (option: string) => {
       setShareOption(option);
       handleShareClose();
    };
