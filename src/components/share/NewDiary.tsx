@@ -11,7 +11,9 @@ import {
    MenuItem,
    ListItemIcon,
    ListItemText,
-   Fab
+   Fab,
+   Chip,
+   LinearProgress
 } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -21,6 +23,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import LockIcon from '@mui/icons-material/Lock';
 import LanguageIcon from '@mui/icons-material/Language';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import DeleteIcon from '@mui/icons-material/Delete';
 import 'react-quill/dist/quill.snow.css'
 import QuillEditor from '../share/QuillEditor'
 import SentimentVerySatisfiedIcon from '@mui/icons-material/SentimentVerySatisfied';
@@ -42,7 +46,48 @@ interface Diary {
    Status: string
 }
 
-export default function NewDiary() {
+interface DiaryWithDetails extends Diary {
+   ID: number;
+   CreatedAt: string;
+   UpdatedAt: string;
+   Student: {
+      ID: number;
+      Name: string;
+      Email: string;
+      Role: string;
+      Image: string;
+      CreatedAt: string;
+   };
+   Attachments: {
+      ID: number;
+      DiaryID: number;
+      FileURL: string;
+      FileName: string;
+   }[];
+}
+
+interface FileWithPreview {
+   file: File;
+   id: string;
+   name: string;
+   size: number;
+   type: string;
+}
+
+interface ExistingAttachment {
+   ID: number;
+   DiaryID: number;
+   FileURL: string;
+   FileName: string;
+}
+
+interface NewDiaryProps {
+   onDiarySaved?: () => void;
+   editDiary?: DiaryWithDetails | null;
+   onEditComplete?: () => void;
+}
+
+export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: NewDiaryProps) {
    const { data: session } = useSession();
    const [open, setOpen] = useState(false);
    const [status, setStatus] = useState('veryHappy');
@@ -52,6 +97,11 @@ export default function NewDiary() {
    const [contentDelta, setContentDelta] = useState('');
    const [userId, setUserId] = useState<number | null>(null);
    const [isLoading, setIsLoading] = useState(false);
+   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([]);
+   const [existingAttachments, setExistingAttachments] = useState<ExistingAttachment[]>([]);
+   const [uploadProgress, setUploadProgress] = useState(0);
+   const [isEditMode, setIsEditMode] = useState(false);
+   const [editingDiaryId, setEditingDiaryId] = useState<number | null>(null);
 
    useEffect(() => {
       if (session) {
@@ -68,21 +118,35 @@ export default function NewDiary() {
       }
    }, [session]);
 
+   useEffect(() => {
+      if (editDiary) {
+         setIsEditMode(true);
+         setEditingDiaryId(editDiary.ID);
+         setContent(editDiary.ContentHTML);
+         setContentDelta(editDiary.ContentDelta);
+         setStatus(editDiary.Status);
+         setShareOption(editDiary.IsShared);
+         setExistingAttachments(editDiary.Attachments || []);
+         setSelectedFiles([]);
+         setOpen(true);
+      }
+   }, [editDiary]);
+
    const statusIcons = {
       veryHappy: {
          icon: <SentimentVerySatisfiedIcon />,
          label: 'มีความสุข',
-         color: '#1b5e20',
+         color: '#2e7d32',
       },
       happy: {
          icon: <SentimentSatisfiedAltIcon />,
          label: 'พอใจ',
-         color: '#7cb342',
+         color: '#9ccc65',
       },
       neutral: {
          icon: <SentimentNeutralIcon />,
          label: 'เฉยๆ',
-         color: '#ffca28',
+         color: '#5c6bc0',
       },
       stressed: {
          icon: <SentimentDissatisfiedIcon />,
@@ -96,7 +160,7 @@ export default function NewDiary() {
       },
    };
 
-   const handleStatusChange = (newStatus) => {
+   const handleStatusChange = (newStatus: string) => {
       setStatus(newStatus);
    };
 
@@ -113,16 +177,6 @@ export default function NewDiary() {
       handleShareClose();
    };
 
-   // const getShareIcon = () => {
-   //    switch (shareOption) {
-   //       case 'everyone': return <PublicIcon fontSize="small" />;
-   //       case 'someone': return <PersonIcon fontSize="small" />;
-   //       case 'teacher': return <SchoolIcon fontSize="small" />;
-   //       case 'personal': return <LockIcon fontSize="small" />;
-   //       default: return <PublicIcon fontSize="small" />;
-   //    }
-   // };
-
    const getShareText = () => {
       switch (shareOption) {
          case 'everyone': return 'สาธารณะ';
@@ -138,11 +192,84 @@ export default function NewDiary() {
       setContentDelta('');
       setStatus('veryHappy');
       setShareOption('everyone');
+      setSelectedFiles([]);
+      setExistingAttachments([]);
+      setUploadProgress(0);
+      setIsEditMode(false);
+      setEditingDiaryId(null);
    };
 
-   const handleContentChange = (html, delta) => {
+   const handleContentChange = (html: string, delta: unknown) => {
       setContent(html);
       setContentDelta(JSON.stringify(delta || {}));
+   };
+
+   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (!files) return;
+
+      const newFiles: FileWithPreview[] = Array.from(files).map(file => ({
+         file,
+         id: Math.random().toString(36).substr(2, 9),
+         name: file.name,
+         size: file.size,
+         type: file.type
+      }));
+
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      event.target.value = '';
+   };
+
+   const handleRemoveFile = (fileId: string) => {
+      setSelectedFiles(prev => prev.filter(f => f.id !== fileId));
+   };
+
+   const handleRemoveExistingFile = async (attachmentId: number) => {
+      try {
+         const result = await Swal.fire({
+            text: "คุณต้องการลบไฟล์นี้ใช่หรือไม่?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#899499",
+            cancelButtonText: "ยกเลิก",
+            confirmButtonText: "ยืนยัน",
+         });
+
+         if (result.isConfirmed) {
+            const response = await fetchWithBase(`/api/diary/attachment/${attachmentId}`, {
+               method: 'DELETE',
+            });
+
+            if (response.ok) {
+               setExistingAttachments(prev => prev.filter(att => att.ID !== attachmentId));
+               Swal.fire({
+                  icon: "success",
+                  text: "ลบไฟล์สำเร็จ",
+                  showConfirmButton: false,
+                  timer: 1500
+               });
+            } else {
+               throw new Error('Failed to delete file');
+            }
+         }
+      } catch (error) {
+         console.error('Error deleting file:', error);
+         Swal.fire({
+            icon: "error",
+            text: "ไม่สามารถลบไฟล์ได้",
+            showConfirmButton: false,
+            timer: 1500
+         });
+      }
+   };
+
+   const formatFileSize = (bytes: number) => {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
    };
 
    const handleSubmit = async (e: React.FormEvent) => {
@@ -151,9 +278,9 @@ export default function NewDiary() {
       if (!content.trim() || content === '<p><br></p>') {
          Swal.fire({
             icon: "warning",
-            text: "กรุณาเพิ่มรายละเอียดในไดอารี่",
+            text: "กรุณาเพิ่มรายละเอียด",
             showConfirmButton: false,
-            timer: 2000,
+            timer: 2500,
          });
          return;
       }
@@ -163,12 +290,13 @@ export default function NewDiary() {
             icon: "error",
             text: "ไม่พบข้อมูลผู้ใช้",
             showConfirmButton: false,
-            timer: 2000,
+            timer: 2500,
          });
          return;
       }
 
       setIsLoading(true);
+      setUploadProgress(0);
 
       try {
          const diaryData: Diary = {
@@ -177,67 +305,150 @@ export default function NewDiary() {
             ContentDelta: contentDelta,
             IsShared: shareOption,
             AllowComment: shareOption !== 'personal',
-            DiaryDate: new Date().toISOString(),
+            DiaryDate: isEditMode ? editDiary!.DiaryDate : new Date().toISOString(),
             Status: status
          };
 
-         console.log('Sending diary data:', diaryData);
+         let response;
+         let diaryId;
 
-         const res = await fetchWithBase("/api/diary", {
-            method: "POST",
-            headers: {
-               "Content-Type": "application/json",
-            },
-            body: JSON.stringify(diaryData),
-         });
-
-         const responseData = await res.json();
-         console.log('Response:', responseData);
-
-         if (res.ok) {
-            Swal.fire({
-               icon: "success",
-               text: "บันทึกสำเร็จ",
-               showConfirmButton: false,
-               timer: 2000,
+         if (isEditMode && editingDiaryId) {
+            response = await fetchWithBase(`/api/diary/${editingDiaryId}`, {
+               method: "PUT",
+               headers: {
+                  "Content-Type": "application/json",
+               },
+               body: JSON.stringify(diaryData),
             });
-            resetForm();
-            setOpen(false);
+            diaryId = editingDiaryId;
          } else {
-            throw new Error(responseData.error || "Failed to save diary");
+            response = await fetchWithBase("/api/diary", {
+               method: "POST",
+               headers: {
+                  "Content-Type": "application/json",
+               },
+               body: JSON.stringify(diaryData),
+            });
+
+            const responseData = await response.json();
+            diaryId = responseData.id || responseData.ID || responseData.diary_id ||
+               responseData.insertId || responseData.data?.id || responseData.data?.ID ||
+               responseData.result?.insertId;
          }
-      } catch (err) {
-         console.error("Error submitting diary:", err);
+
+         if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to save diary'}`);
+         }
+
+         setUploadProgress(30);
+
+         if (selectedFiles.length > 0) {
+            try {
+               setUploadProgress(50);
+
+               const formData = new FormData();
+               formData.append("diary_id", diaryId.toString());
+
+               selectedFiles.forEach(fileData => {
+                  formData.append("files", fileData.file);
+               });
+
+               setUploadProgress(70);
+
+               const fileRes = await fetchWithBase("/api/diary/uploadfile", {
+                  method: "POST",
+                  body: formData,
+               });
+
+               setUploadProgress(90);
+
+               if (!fileRes.ok) {
+                  const fileResponseData = await fileRes.json();
+                  throw new Error(fileResponseData.error || "อัปโหลดไฟล์ไม่สำเร็จ");
+               }
+
+               setUploadProgress(100);
+            } catch (fileError) {
+               console.error("File upload error:", fileError);
+               Swal.fire({
+                  icon: "warning",
+                  text: `${isEditMode ? 'แก้ไข' : 'บันทึก'}ไดอารี่สำเร็จ แต่อัปโหลดไฟล์ไม่สำเร็จ`,
+                  showConfirmButton: false,
+                  timer: 4000,
+               });
+            }
+         }
+
+         const successMessage = isEditMode ? "แก้ไขไดอารี่สำเร็จ" : "บันทึกไดอารี่สำเร็จ";
+         const fileMessage = selectedFiles.length > 0 ? ` พร้อมไฟล์แนบ ${selectedFiles.length} ไฟล์` : "";
+
          Swal.fire({
-            icon: "error",
-            text: "บันทึกไม่สำเร็จ",
+            icon: "success",
+            text: successMessage + fileMessage,
             showConfirmButton: false,
             timer: 2000,
          });
+
+         resetForm();
+         setOpen(false);
+
+         if (isEditMode && onEditComplete) {
+            onEditComplete();
+         } else if (onDiarySaved) {
+            onDiarySaved();
+         }
+
+      } catch (err) {
+         console.error("Error submitting diary:", err);
+         const errorMessage = err instanceof Error ? err.message : `เกิดข้อผิดพลาดในการ${isEditMode ? 'แก้ไข' : 'บันทึก'}ไดอารี่`;
+
+         Swal.fire({
+            icon: "error",
+            title: `${isEditMode ? 'แก้ไข' : 'บันทึก'}ไดอารี่ไม่สำเร็จ`,
+            text: errorMessage,
+            showConfirmButton: false,
+         });
       } finally {
          setIsLoading(false);
+         setUploadProgress(0);
       }
+   };
+
+   const handleClose = () => {
+      if (isLoading) return;
+
+      if (isEditMode) {
+         resetForm();
+         if (onEditComplete) {
+            onEditComplete();
+         }
+      }
+      setOpen(false);
    };
 
    return (
       <>
-         <Fab
-            onClick={() => setOpen(true)}
-            sx={{
-               position: "fixed",
-               bottom: 16,
-               right: 16,
-               backgroundColor: "#000",
-               color: "#fff",
-               "&:hover": { backgroundColor: "#333" },
-            }}
-         >
-            <AddIcon />
-         </Fab>
+         {!isEditMode && (
+            <Fab
+               onClick={() => setOpen(true)}
+               sx={{
+                  position: "fixed",
+                  bottom: 16,
+                  right: 16,
+                  backgroundColor: "#000",
+                  color: "#fff",
+                  "&:hover": { backgroundColor: "#333" },
+               }}
+            >
+               <AddIcon />
+            </Fab>
+         )}
 
          <Dialog
             open={open}
-            onClose={() => setOpen(false)}
+            onClose={handleClose}
+            disableEscapeKeyDown={isLoading}
             PaperProps={{
                sx: {
                   borderRadius: 4,
@@ -256,14 +467,18 @@ export default function NewDiary() {
                   borderBottom: '1px solid #e0e0e0'
                }}>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                     บันทึกความคืบหน้า
+                     {isEditMode ? 'แก้ไขบันทึก' : 'บันทึกความคืบหน้า'}
                   </Typography>
                   <IconButton
-                     onClick={() => setOpen(false)}
+                     onClick={handleClose}
+                     disabled={isLoading}
                      sx={{
                         color: '#666',
                         "&:hover": {
                            color: '#212121',
+                        },
+                        "&:disabled": {
+                           color: '#ccc',
                         },
                      }}
                   >
@@ -351,7 +566,7 @@ export default function NewDiary() {
                      </Box>
                   </Box>
 
-                  <Box sx={{ mb: 3 }}>
+                  <Box sx={{ mb: 2 }}>
                      <Typography
                         variant="body2"
                         sx={{
@@ -364,11 +579,46 @@ export default function NewDiary() {
                      </Typography>
                   </Box>
 
+                  {/* แสดงไฟล์แนบที่มีอยู่แล้ว (ในโหมดแก้ไข) */}
+                  {isEditMode && existingAttachments.length > 0 && (
+                     <Box sx={{ mb: 2.5 }}>
+                        <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
+                           ไฟล์แนบปัจจุบัน ({existingAttachments.length} ไฟล์)
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                           {existingAttachments.map((attachment) => (
+                              <Chip
+                                 key={attachment.ID}
+                                 icon={<AttachFileIcon />}
+                                 label={attachment.FileName || 'ไฟล์ไม่มีชื่อ'}
+                                 variant="outlined"
+                                 onDelete={() => handleRemoveExistingFile(attachment.ID)}
+                                 deleteIcon={<DeleteIcon />}
+                                 sx={{
+                                    maxWidth: 300,
+                                    '& .MuiChip-label': {
+                                       overflow: 'hidden',
+                                       textOverflow: 'ellipsis',
+                                       whiteSpace: 'nowrap',
+                                    },
+                                    '& .MuiChip-deleteIcon': {
+                                       color: '#e53935',
+                                    },
+                                 }}
+                              />
+                           ))}
+                        </Box>
+                     </Box>
+                  )}
+
+                  {/* ส่วนอัปโหลดไฟล์ใหม่ */}
                   <Box sx={{
                      display: 'flex',
                      justifyContent: 'center',
                      mb: 3,
-                     py: 3,
+                     py: 2,
+                     mx: 'auto',
+                     width: 700,
                      border: '2px dashed #e0e0e0',
                      borderRadius: 2,
                      cursor: 'pointer',
@@ -392,14 +642,61 @@ export default function NewDiary() {
                         }}
                      >
                         <CloudUploadIcon sx={{ fontSize: 24 }} />
-                        <Typography variant="body2">Upload File</Typography>
-                        <input type="file" hidden />
+                        <Typography variant="body2">
+                           {isEditMode ? 'เพิ่มไฟล์แนบใหม่' : 'เลือกไฟล์แนบ'}
+                        </Typography>
+                        <input
+                           type="file"
+                           multiple
+                           hidden
+                           onChange={handleFileSelect}
+                           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+                        />
                      </Button>
                   </Box>
 
+                  {/* แสดงรายการไฟล์ใหม่ที่เลือก */}
+                  {selectedFiles.length > 0 && (
+                     <Box sx={{ mb: 2.5 }}>
+                        <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
+                           ไฟล์ใหม่ที่เลือก ({selectedFiles.length} ไฟล์)
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                           {selectedFiles.map((fileData) => (
+                              <Chip
+                                 key={fileData.id}
+                                 icon={<AttachFileIcon />}
+                                 label={`${fileData.name} (${formatFileSize(fileData.size)})`}
+                                 onDelete={() => handleRemoveFile(fileData.id)}
+                                 deleteIcon={<DeleteIcon />}
+                                 variant="outlined"
+                                 sx={{
+                                    maxWidth: 300,
+                                    backgroundColor: '#e3f2fd',
+                                    '& .MuiChip-label': {
+                                       overflow: 'hidden',
+                                       textOverflow: 'ellipsis',
+                                       whiteSpace: 'nowrap',
+                                    },
+                                 }}
+                              />
+                           ))}
+                        </Box>
+                     </Box>
+                  )}
+
+                  {isLoading && uploadProgress > 0 && (
+                     <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
+                           {isEditMode ? 'กำลังแก้ไข...' : 'กำลังอัปโหลด...'} {uploadProgress}%
+                        </Typography>
+                        <LinearProgress variant="determinate" value={uploadProgress} />
+                     </Box>
+                  )}
+
                   <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                      <Button
-                        onClick={() => setOpen(false)}
+                        onClick={handleClose}
                         disabled={isLoading}
                         sx={{
                            backgroundColor: '#e0e0e0',
@@ -410,6 +707,10 @@ export default function NewDiary() {
                            textTransform: 'none',
                            '&:hover': {
                               backgroundColor: '#d0d0d0',
+                           },
+                           '&:disabled': {
+                              backgroundColor: '#f5f5f5',
+                              color: '#ccc',
                            },
                         }}
                      >
@@ -430,7 +731,10 @@ export default function NewDiary() {
                            },
                         }}
                      >
-                        {isLoading ? 'กำลังบันทึก...' : 'บันทึก'}
+                        {isLoading ?
+                           (isEditMode ? 'กำลังแก้ไข...' : 'กำลังบันทึก...') :
+                           (isEditMode ? 'บันทึกการแก้ไข' : 'บันทึก')
+                        }
                      </Button>
                   </Box>
                </Box>

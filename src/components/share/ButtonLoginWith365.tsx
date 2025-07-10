@@ -1,9 +1,10 @@
 'use client'
+
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { Button } from '@mui/material'
-import { Microsoft } from '@mui/icons-material'
+// import { Microsoft } from '@mui/icons-material'
 import Swal from 'sweetalert2'
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
 
@@ -14,24 +15,31 @@ export default function ButtonLoginWith365() {
     const hasProcessedLogin = useRef(false)
 
     useEffect(() => {
-        if (status === 'authenticated' &&
+        if (
+            status === 'authenticated' &&
             session?.user?.email &&
             !isLoading &&
-            !hasProcessedLogin.current) {
-
-            hasProcessedLogin.current = true
-            handleLogin(session.user.email)
+            !hasProcessedLogin.current
+        ) {
+            hasProcessedLogin.current = true;
+            handleLogin(session.user.email);
         }
-    }, [session?.user?.email, status])
+    }, [session?.user?.email, status]);
 
     const handleLogin = async (email: string) => {
         setIsLoading(true)
+
+        const loginData = {
+            email,
+            name: session?.user?.name ?? null,
+            image: session?.user?.image ?? null,
+        };
 
         try {
             const res = await fetchWithBase('/api/auth/microsoft', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify(loginData),
             })
 
             if (!res.ok) {

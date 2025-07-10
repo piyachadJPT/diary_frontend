@@ -350,7 +350,13 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const years = Array.from({ length: 11 }, (_, i) => currentYear - 4 + i);
 
    const drawer = (
-      <Box sx={{ height: '100%', bgcolor: 'white', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{
+         display: 'flex',
+         flexDirection: 'column',
+         height: 'auto',
+         minHeight: '100%',
+         boxSizing: 'border-box'
+      }}>
          <Box sx={{ p: 1.5, borderBottom: '1px solid #f0f0f0' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                <IconButton
@@ -453,7 +459,15 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
             </IconButton>
          </Box>
 
-         <Box sx={{ flex: 1, overflow: 'auto' }}>
+         <Box
+            sx={{
+               overflowY: 'auto',
+               scrollbarWidth: 'none',
+               '&::-webkit-scrollbar': {
+                  display: 'none',
+               },
+            }}
+         >
             {months.map((month, index) => {
                const isSelectedMonth = index === currentDate.getMonth() && selectedYear === currentDate.getFullYear();
 
@@ -832,7 +846,14 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         bgcolor: 'white',
                         border: 'none',
                         borderRight: '1px solid #f0f0f0',
-                        position: 'relative',
+                        position: 'fixed',
+                        height: '100vh',
+                        // maxHeight: '100%',
+                        // overflowY: 'auto',
+                        // scrollbarWidth: 'none',
+                        // '&::-webkit-scrollbar': {
+                        //    display: 'none',
+                        // },
                         transition: theme.transitions.create('width', {
                            easing: theme.transitions.easing.sharp,
                            duration: theme.transitions.duration.enteringScreen,
@@ -849,7 +870,8 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                sx={{
                   flexGrow: 1,
                   width: {
-                     md: desktopOpen ? `calc(100% - ${drawerWidth}px)` : '100%'
+                     // md: desktopOpen ? `calc(100% - ${drawerWidth}px)` : '100%'
+                     ml: `${drawerWidth}px`,
                   },
                   bgcolor: '#fafafa',
                   minHeight: '100vh',
