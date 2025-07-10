@@ -64,7 +64,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
             });
 
             await signOut({
-               callbackUrl: '/',
+               callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
             });
          };
 
@@ -150,7 +150,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       });
 
       await signOut({
-         callbackUrl: '/',
+         callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
       });
    };
 
