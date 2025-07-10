@@ -580,7 +580,6 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                      </Typography>
                   </Box>
 
-                  {/* แสดงไฟล์แนบที่มีอยู่แล้ว (ในโหมดแก้ไข) */}
                   {isEditMode && existingAttachments.length > 0 && (
                      <Box sx={{ mb: 2.5 }}>
                         <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
@@ -612,7 +611,6 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                      </Box>
                   )}
 
-                  {/* ส่วนอัปโหลดไฟล์ใหม่ */}
                   <Box sx={{
                      display: 'flex',
                      justifyContent: 'center',
@@ -656,7 +654,6 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                      </Button>
                   </Box>
 
-                  {/* แสดงรายการไฟล์ใหม่ที่เลือก */}
                   {selectedFiles.length > 0 && (
                      <Box sx={{ mb: 2.5 }}>
                         <Typography variant="body2" sx={{ mb: 1, color: '#666' }}>
