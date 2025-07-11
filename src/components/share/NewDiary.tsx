@@ -102,6 +102,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
    const [uploadProgress, setUploadProgress] = useState(0);
    const [isEditMode, setIsEditMode] = useState(false);
    const [editingDiaryId, setEditingDiaryId] = useState<number | null>(null);
+   const [isDeletingFile, setIsDeletingFile] = useState<number | null>(null);
 
    useEffect(() => {
       if (session) {
@@ -168,7 +169,6 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
       setShareAnchor(event.currentTarget);
    };
 
-
    const handleShareClose = () => {
       setShareAnchor(null);
    };
@@ -198,6 +198,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
       setUploadProgress(0);
       setIsEditMode(false);
       setEditingDiaryId(null);
+      setIsDeletingFile(null);
    };
 
    const handleContentChange = (html: string, delta: unknown) => {
@@ -226,42 +227,35 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
    };
 
    const handleRemoveExistingFile = async (attachmentId: number) => {
+      setIsDeletingFile(attachmentId);
+
       try {
-         const result = await Swal.fire({
-            text: "คุณต้องการลบไฟล์นี้ใช่หรือไม่?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#899499",
-            cancelButtonText: "ยกเลิก",
-            confirmButtonText: "ยืนยัน",
+         const response = await fetchWithBase(`/api/diary/attachment/${attachmentId}`, {
+            method: 'DELETE',
+            headers: {
+               'Content-Type': 'application/json',
+            },
          });
 
-         if (result.isConfirmed) {
-            const response = await fetchWithBase(`/api/diary/attachment/${attachmentId}`, {
-               method: 'DELETE',
-            });
-
-            if (response.ok) {
-               setExistingAttachments(prev => prev.filter(att => att.ID !== attachmentId));
-               Swal.fire({
-                  icon: "success",
-                  text: "ลบไฟล์สำเร็จ",
-                  showConfirmButton: false,
-                  timer: 1500
-               });
-            } else {
-               throw new Error('Failed to delete file');
-            }
+         if (response.ok) {
+            setExistingAttachments(prev => prev.filter(att => att.ID !== attachmentId));
+         } else {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || errorData.error || 'Failed to delete file');
          }
       } catch (error) {
          console.error('Error deleting file:', error);
+
+         const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการลบไฟล์';
+
          Swal.fire({
-            icon: "error",
-            text: "ไม่สามารถลบไฟล์ได้",
-            showConfirmButton: false,
-            timer: 1500
+            icon: 'error',
+            title: 'ลบไฟล์ไม่สำเร็จ',
+            text: errorMessage,
+            confirmButtonText: 'ตกลง',
          });
+      } finally {
+         setIsDeletingFile(null);
       }
    };
 
@@ -417,7 +411,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
    };
 
    const handleClose = () => {
-      if (isLoading) return;
+      if (isLoading || isDeletingFile) return;
 
       if (isEditMode) {
          resetForm();
@@ -449,7 +443,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
          <Dialog
             open={open}
             onClose={handleClose}
-            disableEscapeKeyDown={isLoading}
+            disableEscapeKeyDown={isLoading || isDeletingFile !== null}
             PaperProps={{
                sx: {
                   borderRadius: 4,
@@ -472,7 +466,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                   </Typography>
                   <IconButton
                      onClick={handleClose}
-                     disabled={isLoading}
+                     disabled={isLoading || isDeletingFile !== null}
                      sx={{
                         color: '#666',
                         "&:hover": {
@@ -593,16 +587,27 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                                  label={attachment.FileName || 'ไฟล์ไม่มีชื่อ'}
                                  variant="outlined"
                                  onDelete={() => handleRemoveExistingFile(attachment.ID)}
-                                 deleteIcon={<DeleteIcon />}
+                                 deleteIcon={
+                                    isDeletingFile === attachment.ID ? (
+                                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                          <Typography variant="caption" sx={{ mr: 0.5 }}>
+                                             กำลังลบ...
+                                          </Typography>
+                                       </Box>
+                                    ) : (
+                                       <DeleteIcon />
+                                    )
+                                 }
                                  sx={{
                                     maxWidth: 300,
+                                    opacity: isDeletingFile === attachment.ID ? 0.7 : 1,
                                     '& .MuiChip-label': {
                                        overflow: 'hidden',
                                        textOverflow: 'ellipsis',
                                        whiteSpace: 'nowrap',
                                     },
                                     '& .MuiChip-deleteIcon': {
-                                       color: '#e53935',
+                                       color: isDeletingFile === attachment.ID ? '#999' : '#e53935',
                                     },
                                  }}
                               />
@@ -695,7 +700,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                   <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                      <Button
                         onClick={handleClose}
-                        disabled={isLoading}
+                        disabled={isLoading || isDeletingFile !== null}
                         sx={{
                            backgroundColor: '#e0e0e0',
                            color: '#666',
@@ -716,7 +721,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                      </Button>
                      <Button
                         onClick={handleSubmit}
-                        disabled={isLoading}
+                        disabled={isLoading || isDeletingFile !== null}
                         sx={{
                            backgroundColor: '#4caf50',
                            color: '#fff',
@@ -726,6 +731,10 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                            textTransform: 'none',
                            '&:hover': {
                               backgroundColor: '#45a049',
+                           },
+                           '&:disabled': {
+                              backgroundColor: '#ccc',
+                              color: '#999',
                            },
                         }}
                      >
