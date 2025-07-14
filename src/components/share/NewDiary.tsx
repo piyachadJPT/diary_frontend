@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from "react";
 import {
    Button,
@@ -368,14 +370,14 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                console.error("File upload error:", fileError);
                Swal.fire({
                   icon: "warning",
-                  text: `${isEditMode ? 'แก้ไข' : 'บันทึก'}ไดอารี่สำเร็จ แต่อัปโหลดไฟล์ไม่สำเร็จ`,
+                  text: `${isEditMode ? 'แก้ไข' : 'บันทึก'}บันทึกสำเร็จ แต่อัปโหลดไฟล์ไม่สำเร็จ`,
                   showConfirmButton: false,
                   timer: 4000,
                });
             }
          }
 
-         const successMessage = isEditMode ? "แก้ไขไดอารี่สำเร็จ" : "บันทึกไดอารี่สำเร็จ";
+         const successMessage = isEditMode ? "แก้ไขบันทึกสำเร็จ" : "บันทึกบันทึกสำเร็จ";
          const fileMessage = selectedFiles.length > 0 ? ` พร้อมไฟล์แนบ ${selectedFiles.length} ไฟล์` : "";
 
          Swal.fire({
@@ -396,11 +398,11 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
 
       } catch (err) {
          console.error("Error submitting diary:", err);
-         const errorMessage = err instanceof Error ? err.message : `เกิดข้อผิดพลาดในการ${isEditMode ? 'แก้ไข' : 'บันทึก'}ไดอารี่`;
+         const errorMessage = err instanceof Error ? err.message : `เกิดข้อผิดพลาดในการ${isEditMode ? 'แก้ไข' : 'บันทึก'}บันทึก`;
 
          Swal.fire({
             icon: "error",
-            title: `${isEditMode ? 'แก้ไข' : 'บันทึก'}ไดอารี่ไม่สำเร็จ`,
+            title: `${isEditMode ? 'แก้ไข' : 'บันทึก'}บันทึกไม่สำเร็จ`,
             text: errorMessage,
             showConfirmButton: false,
          });
