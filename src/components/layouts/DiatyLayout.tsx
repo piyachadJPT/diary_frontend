@@ -55,8 +55,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
    const [currentDate, setCurrentDate] = useState(new Date());
 
-   console.log('session :', session);
-
    useEffect(() => {
       if (status === 'unauthenticated') {
          const doSignOut = async () => {
@@ -146,6 +144,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
 
    const handleSignOut = async () => {
       handleClose();
+      setDesktopOpen(!desktopOpen);
       await Swal.fire({
          icon: "success",
          text: `กำลังออกจากระบบ`,
