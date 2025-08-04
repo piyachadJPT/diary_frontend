@@ -158,7 +158,7 @@ export default function Comment({ diary_Id, user_Id }: CommentProps) {
    const handleDelete = async (id: number) => {
       const result = await Swal.fire({
          text: "คุณต้องการลบความคิดเห็นนี้ใช่หรือไม่?",
-         icon: 'warning',
+         icon: 'question',
          showCancelButton: true,
          confirmButtonColor: "#d33",
          cancelButtonColor: "#899499",
@@ -224,7 +224,7 @@ export default function Comment({ diary_Id, user_Id }: CommentProps) {
                      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                            <Avatar
-                              src={item.Author?.Image || '/default-avatar.png'}
+                              src={item.Author?.Image || '/default-avatar.svg'}
                               alt={item.Author?.Name || 'ไม่ระบุชื่อ'}
                               sx={{ width: 42, height: 42, mr: 2 }}
                            />

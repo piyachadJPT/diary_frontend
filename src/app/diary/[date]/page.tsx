@@ -34,7 +34,7 @@ import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
 import Swal from 'sweetalert2';
-import Connent from '@/components/share/Comment'
+import Comment from '@/components/share/Comment'
 
 const NewDiary = dynamic(() => import('@/components/share/NewDiary'), {
    ssr: false,
@@ -74,7 +74,6 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
    const [userId, setUserId] = useState<number | null>(null);
    const [diaries, setDiaries] = useState<Diary[]>([]);
    const [isLoading, setIsLoading] = useState<boolean>(true);
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const [error, setError] = useState<string | null>(null);
 
    const [editingDiary, setEditingDiary] = useState<Diary | null>(null);
@@ -215,7 +214,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
    const handleDelete = async (id: number) => {
       const result = await Swal.fire({
          text: "คุณต้องการลบบันทึกนี้ใช่หรือไม่?",
-         icon: 'warning',
+         icon: 'question',
          showCancelButton: true,
          confirmButtonColor: "#d33",
          cancelButtonColor: "#899499",
@@ -294,10 +293,16 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                            alignItems: 'center',
                         }}>
                            <Avatar
-                              src={diary.Student?.Image || '/default-avatar.png'}
+                              src={diary.Student?.Image || '/default-avatar.svg'}
                               alt={diary.Student?.Name || 'Unknown User'}
                               sx={{ width: 55, height: 55, mr: 2 }}
-                           />
+                           >
+                              <img
+                                 src='/default-avatar.svg'
+                                 alt=""
+                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                           </Avatar>
                            <Box sx={{ flex: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                  <Box sx={{ display: 'flex', flexDirection: 'column', mr: 1 }}>
@@ -384,7 +389,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                                        icon={<AttachFile sx={{ color: 'text.secondary' }} />}
                                        label={attachment.FileName || 'ไฟล์ไม่มีชื่อ'}
                                        variant="outlined"
-                                       onDelete={() => window.open(`diary/${date}/${attachment.ID}`, '_blank')}
+                                       onDelete={() => window.open(`/diary/${date}/${attachment.ID}`, '_blank')}
                                        deleteIcon={<SearchIcon />}
                                        sx={{
                                           maxWidth: 300,
@@ -403,7 +408,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                                  ))}
                               </Box>
                            )}
-                           <Connent diary_Id={diary.ID} user_Id={diary.Student.ID} />
+                           <Comment diary_Id={diary.ID} user_Id={diary.Student.ID} />
                         </Box>
                      </Paper>
                   );

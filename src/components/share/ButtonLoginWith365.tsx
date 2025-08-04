@@ -24,7 +24,7 @@ export default function ButtonLoginWith365() {
             hasProcessedLogin.current = true;
             handleLogin(session.user.email);
         }
-    }, [session?.user?.email, status]);
+    }, [session?.user?.email, status, isLoading]);
 
     const handleLogin = async (email: string) => {
         setIsLoading(true)
@@ -69,7 +69,7 @@ export default function ButtonLoginWith365() {
 
             if (userRole === 'student') {
                 router.push(`/diary/${dateString}`)
-            } else if (userRole === 'teacher') {
+            } else if (userRole === 'advisor') {
                 router.push('/teacher')
             } else {
                 throw new Error(`Unknown role: ${data.role}`)

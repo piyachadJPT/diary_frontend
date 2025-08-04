@@ -28,7 +28,7 @@ import {
 import Grid from '@mui/material/Grid';
 import {
    Menu as MenuIcon,
-   Person,
+   Visibility as VisibilityIcon,
    LogoutOutlined,
    AccountCircle,
    ChevronLeft,
@@ -55,6 +55,8 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
    const [currentDate, setCurrentDate] = useState(new Date());
 
+   console.log('session :', session);
+
    useEffect(() => {
       if (status === 'unauthenticated') {
          const doSignOut = async () => {
@@ -64,7 +66,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                showConfirmButton: false,
                timer: 1000,
             });
-
+            sessionStorage.clear()
             await signOut({
                callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
             });
@@ -150,7 +152,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
          showConfirmButton: false,
          timer: 1500,
       });
-
+      sessionStorage.clear()
       await signOut({
          callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
       });
@@ -366,17 +368,10 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                   aria-label="account of current user"
                   aria-controls="menu-appbar"
                   aria-haspopup="true"
-                  onClick={handleMenu}
-                  sx={{
-                     color: '#6b7280',
-                     '&:hover': {
-                        bgcolor: '#f8f9fa',
-                     },
-                  }}
                >
                   {session?.user?.image ? (
                      <Avatar
-                        src={session.user.image}
+                        src={session.user.image || '/default-avatar.svg'}
                         alt={session.user.name || 'User'}
                         sx={{ width: 60, height: 60 }}
                      />
@@ -740,7 +735,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                      >
                         {session?.user?.image ? (
                            <Avatar
-                              src={session.user.image}
+                              src={session.user.image || '/default-avatar.svg'}
                               alt={session.user.name || 'User'}
                               sx={{ width: 40, height: 40 }}
                            />
@@ -782,9 +777,9 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                            }}
                         >
                            <ListItemIcon sx={{ minWidth: 32 }}>
-                              <Person fontSize="small" sx={{ color: '#6b7280' }} />
+                              <VisibilityIcon fontSize="small" sx={{ color: '#6b7280' }} />
                            </ListItemIcon>
-                           โปรไฟล์ส่วนตัว
+                           ดูบันทึกนิสิตคนอื่น
                         </MenuItem>
                         <Divider sx={{ my: 0.5 }} />
                         <MenuItem

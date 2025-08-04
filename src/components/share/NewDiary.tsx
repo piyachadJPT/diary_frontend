@@ -656,7 +656,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                            multiple
                            hidden
                            onChange={handleFileSelect}
-                           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+                           accept=".pdf"
                         />
                      </Button>
                   </Box>
