@@ -55,11 +55,11 @@ export default function Page() {
                         </Box>
 
                         <Box sx={{ height: '100px' }}>
-                            <Mood />
+                            <Mood advisorId={userId} />
                         </Box>
 
                         <Box sx={{ height: '400px' }}>
-                            <Warn />
+                            <Warn advisorId={userId} />
                         </Box>
                     </Box>
                 ) : (
@@ -83,11 +83,11 @@ export default function Page() {
                             gap: 3
                         }}>
                             <Box sx={{ flexShrink: 0 }}>
-                                <Mood />
+                                <Mood advisorId={userId} />
                             </Box>
 
                             <Box sx={{ flex: 1 }}>
-                                <Warn />
+                                <Warn advisorId={userId} />
                             </Box>
                         </Box>
                     </Box>

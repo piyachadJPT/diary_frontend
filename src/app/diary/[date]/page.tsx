@@ -33,6 +33,7 @@ import SentimentSatisfiedAltIcon from '@mui/icons-material/SentimentSatisfiedAlt
 import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import Swal from 'sweetalert2';
 import Comment from '@/components/share/Comment'
 
@@ -106,7 +107,6 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       },
    };
 
-
    type StatusKey = keyof typeof statusIcons;
 
    const getShareText = (IsShared: string) => {
@@ -137,6 +137,16 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       return null;
    };
 
+   const formatDateForAPI = (dateString: string): string => {
+      try {
+         const dateObj = new Date(dateString);
+         return dateObj.toISOString().split('T')[0];
+      } catch (error) {
+         console.error('Error formatting date:', error);
+         return dateString;
+      }
+   };
+
    useEffect(() => {
       if (status === 'authenticated' && session?.user?.email) {
          const fetchUser = async () => {
@@ -156,27 +166,80 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
    }, [session, status]);
 
    const fetchDiaries = useCallback(async () => {
-      if (!userId || !date) return;
+      if (!userId || !date) {
+         setIsLoading(false);
+         return;
+      }
+
       try {
          setIsLoading(true);
-         const res = await fetchWithBase(`/api/diary?DiaryDate=${encodeURIComponent(date)}&StudentID=${userId}`);
-         if (!res.ok) throw new Error('Failed to fetch diaries');
-         const response = await res.json();
-         setDiaries(Array.isArray(response.data) ? response.data : []);
+
+         const originalDate = date;
+         const formattedDate = formatDateForAPI(date);
+
+         console.log('Original date:', originalDate);
+         console.log('Formatted date:', formattedDate);
+         console.log('User ID:', userId);
+
+         const allDiariesRes = await fetchWithBase(`/api/diary?StudentID=${userId}`);
+
+         if (allDiariesRes.ok) {
+            const allDiariesResponse = await allDiariesRes.json();
+            console.log('All diaries for user:', allDiariesResponse);
+         }
+
+         const dateFormats = [
+            originalDate,
+            formattedDate,
+            date.split('T')[0],
+            new Date(date).toLocaleDateString('en-CA'),
+         ];
+
+         console.log('Trying date formats:', dateFormats);
+
+         let finalResponse = null;
+
+         for (const dateFormat of dateFormats) {
+            try {
+               console.log(`Trying API call with date: ${dateFormat}`);
+               const res = await fetchWithBase(`/api/diary?DiaryDate=${encodeURIComponent(dateFormat)}&StudentID=${userId}`);
+
+               if (res.ok) {
+                  const response = await res.json();
+                  console.log(`API Response for ${dateFormat}:`, response);
+
+                  if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+                     finalResponse = response;
+                     console.log(`Found data with date format: ${dateFormat}`);
+                     break;
+                  }
+               } else {
+                  console.log(`API call failed for ${dateFormat}:`, res.status, res.statusText);
+               }
+            } catch (error) {
+               console.log(`Error trying date format ${dateFormat}:`, error);
+            }
+         }
+
+         if (finalResponse) {
+            setDiaries(Array.isArray(finalResponse.data) ? finalResponse.data : []);
+         } else {
+            console.log('No data found for any date format');
+            setDiaries([]);
+         }
+
       } catch (err) {
          console.error('Error fetching diaries:', err);
-         setError('ไม่สามารถดึงข้อมูลบันทึกได้');
+         setError('ไม่สามารถดึงข้อมูลบันทึกได้: ' + err);
          setDiaries([]);
       } finally {
          setIsLoading(false);
       }
-   }, [userId, date, setIsLoading, setDiaries, setError]);
+   }, [userId, date]);
 
    useEffect(() => {
       fetchDiaries();
    }, [fetchDiaries]);
-
-   console.log('diary :', diaries);
 
    const formatDate = (dateString: string): string => {
       try {
@@ -276,7 +339,6 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
             {diaries.length > 0 ? (
                diaries.map((diary) => {
                   const statusKey = getStatusKey(diary.Status);
-
                   return (
                      <Paper
                         key={diary.ID}
@@ -414,15 +476,31 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                   );
                })
             ) : (
-               <Typography variant="body1" sx={{ textAlign: 'center' }}>
-                  ไม่พบบันทึกสำหรับวันนี้
-               </Typography>
+               <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <CalendarTodayIcon
+                     sx={{
+                        fontSize: 48,
+                        color: 'text.disabled',
+                        mb: 2,
+                        opacity: 0.6,
+                        display: 'block',
+                        mx: 'auto'
+                     }}
+                  />
+                  <Typography variant="h6" sx={{ mb: 1, color: 'text.secondary' }}>
+                     ไม่พบบันทึกสำหรับวันที่ {formatDate(date)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+                     เริ่มเขียนบันทึกแรกของคุณได้เลย
+                  </Typography>
+               </Box>
             )}
 
             <NewDiary
                onDiarySaved={fetchDiaries}
                editDiary={editingDiary}
                onEditComplete={handleEditComplete}
+               params={{ date }}
             />
          </Box>
       </DiatyLayout>

@@ -57,8 +57,6 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
       fetchDiaryByDate()
    }, [fetchDiaryByDate])
 
-   console.log('diaryDate :', diaryDate)
-
    const getDaysInMonth = (date: Date): number => {
       return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
    };
@@ -317,55 +315,54 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
                                  alignItems: 'center',
                                  justifyContent: 'center',
                                  cursor: isClickable ? 'pointer' : 'default',
-                                 borderRadius: 1.5,
+                                 borderRadius: 2,
                                  transition: 'all 0.2s ease',
                                  position: 'relative',
                                  margin: '2px',
                                  minHeight: 44,
 
-                                 backgroundColor: isTodayDate
-                                    ? dateHasData
-                                       ? '#7e57c2'
-                                       : '#ede7f6'
-                                    : dateHasData
-                                       ? '#ede7f6'
+                                 backgroundColor: dateHasData
+                                    ? '#7e57c2'
+                                    : isTodayDate
+                                       ? '#f3f4f6'
                                        : 'transparent',
 
-                                 border: isTodayDate
-                                    ? dateHasData
-                                       ? '2px solid #7e57c2'
-                                       : '2px solid #9575cd'
-                                    : dateHasData
-                                       ? '1px solid #b39ddb'
+                                 border: dateHasData
+                                    ? '2px solid #6d28d9'
+                                    : isTodayDate
+                                       ? '2px solid #d1d5db'
                                        : '1px solid transparent',
 
                                  color: !isCurrentMonthDate
                                     ? '#d1c4e9'
-                                    : isFuture
-                                       ? '#b39ddb'
-                                       : isTodayDate
-                                          ? dateHasData ? '#ffffff' : '#7e57c2'
-                                          : dateHasData
-                                             ? '#7e57c2'
-                                             : '#9575cd',
+                                    : dateHasData
+                                       ? '#ffffff'
+                                       : isFuture
+                                          ? '#b39ddb'
+                                          : isTodayDate
+                                             ? '#374151'
+                                             : '#6b7280',
 
                                  opacity: !isCurrentMonthDate ? 0.4 : 1,
 
+                                 boxShadow: dateHasData
+                                    ? '0 2px 8px rgba(126, 87, 194, 0.25)'
+                                    : 'none',
+
                                  '&:hover': isClickable ? {
-                                    backgroundColor: isTodayDate
-                                       ? '#673ab7'
-                                       : '#d1c4e9',
-                                    transform: 'scale(1.05)',
-                                    boxShadow: '0 4px 12px rgba(126, 87, 194, 0.15)',
+                                    backgroundColor: '#6d28d9',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 4px 16px rgba(126, 87, 194, 0.4)',
+                                    borderColor: '#5b21b6',
                                  } : {},
                               }}
                            >
                               <Typography
                                  variant="body2"
                                  sx={{
-                                    fontWeight: isTodayDate
+                                    fontWeight: dateHasData
                                        ? 600
-                                       : dateHasData
+                                       : isTodayDate
                                           ? 500
                                           : 400,
                                     fontSize: '14px',
@@ -375,16 +372,33 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
                                  {dateObj.getDate()}
                               </Typography>
 
-                              {dateHasData && !isTodayDate && (
+                              {dateHasData && (
                                  <Box
                                     sx={{
                                        position: 'absolute',
-                                       bottom: 4,
-                                       right: 4,
+                                       bottom: 3,
+                                       left: '50%',
+                                       transform: 'translateX(-50%)',
+                                       width: 5,
+                                       height: 5,
+                                       borderRadius: '50%',
+                                       backgroundColor: '#ffffff',
+                                       boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                    }}
+                                 />
+                              )}
+
+                              {isTodayDate && !dateHasData && (
+                                 <Box
+                                    sx={{
+                                       position: 'absolute',
+                                       bottom: 3,
+                                       left: '50%',
+                                       transform: 'translateX(-50%)',
                                        width: 4,
                                        height: 4,
                                        borderRadius: '50%',
-                                       backgroundColor: '#7e57c2',
+                                       backgroundColor: '#9575cd',
                                     }}
                                  />
                               )}
@@ -399,37 +413,51 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
                <Box sx={{
                   mt: 3,
                   pt: 2,
-                  borderTop: '1px solid #ede7f6',
+                  borderTop: '1px solid #e5e7eb',
                   display: 'flex',
                   justifyContent: 'center',
-                  gap: 3
+                  gap: 4
                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                      <Box sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
+                        width: 16,
+                        height: 16,
+                        borderRadius: 1,
                         backgroundColor: '#7e57c2',
+                        border: '2px solid #6d28d9',
+                        boxShadow: '0 1px 3px rgba(126, 87, 194, 0.3)',
                      }} />
                      <Typography variant="caption" sx={{
-                        color: '#9575cd',
-                        fontSize: '11px',
+                        color: '#6b7280',
+                        fontSize: '12px',
                         fontWeight: 500
                      }}>
-                        วันที่มีการบันทึกข้อมูล
+                        วันที่มีข้อมูล
                      </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                      <Box sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        border: '2px solid #7e57c2',
-                        backgroundColor: '#ffffff',
-                     }} />
+                        width: 16,
+                        height: 16,
+                        borderRadius: 1,
+                        backgroundColor: '#f3f4f6',
+                        border: '2px solid #d1d5db',
+                        position: 'relative',
+                     }}>
+                        <Box sx={{
+                           position: 'absolute',
+                           bottom: 1,
+                           left: '50%',
+                           transform: 'translateX(-50%)',
+                           width: 3,
+                           height: 3,
+                           borderRadius: '50%',
+                           backgroundColor: '#9575cd',
+                        }} />
+                     </Box>
                      <Typography variant="caption" sx={{
-                        color: '#9575cd',
-                        fontSize: '11px',
+                        color: '#6b7280',
+                        fontSize: '12px',
                         fontWeight: 500
                      }}>
                         วันนี้

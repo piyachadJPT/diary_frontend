@@ -5,7 +5,7 @@
 import ThemeRegistry from "../share/ThemeRegistry";
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useState, useEffect, useCallback } from 'react';
 import {
    AppBar,
    Box,
@@ -35,10 +35,16 @@ import {
    ChevronRight,
 } from '@mui/icons-material';
 import Swal from 'sweetalert2';
+import { fetchWithBase } from "@/app/unit/fetchWithUrl";
 
 interface DiatyLayoutProps {
    children: ReactNode;
    selectedDate?: string;
+}
+
+export interface DiaryDateResponse {
+   message: string;
+   data: string[];
 }
 
 const drawerWidth = 280;
@@ -50,6 +56,8 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const theme = useTheme();
    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+   const [diaryDate, setDiaryDate] = useState<DiaryDateResponse | null>(null);
+   const [userId, setUserId] = useState<number | null>(null);
    const [mobileOpen, setMobileOpen] = useState(false);
    const [desktopOpen, setDesktopOpen] = useState(true);
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -73,6 +81,44 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
          doSignOut();
       }
    }, [status]);
+
+   useEffect(() => {
+      if (status === 'authenticated' && session?.user?.email) {
+         const fetchUser = async () => {
+            try {
+               const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
+               if (!res.ok) throw new Error('Failed to fetch user');
+               const data = await res.json();
+               setUserId(data.ID);
+            } catch (error) {
+               console.error('Error fetching user:', error);
+            }
+         };
+         fetchUser();
+      }
+   }, [session, status]);
+
+   const fetchDiaryByDate = useCallback(async () => {
+      if (userId) {
+         try {
+            const res = await fetchWithBase(`/api/diary/by-student?StudentID=${userId}`)
+
+            if (!res.ok) {
+               throw new Error('Failed to fetch student advisor data');
+            }
+
+            const data = await res.json()
+            setDiaryDate(data)
+
+         } catch (error) {
+            console.error('Error fetching :', error);
+         }
+      }
+   }, [userId])
+
+   useEffect(() => {
+      fetchDiaryByDate()
+   }, [fetchDiaryByDate])
 
    const getInitialSelectedDate = () => {
       if (selectedDate) {
@@ -165,19 +211,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
    };
 
-   // const navigateMonth = (direction: 'prev' | 'next') => {
-   //    setCurrentDate(prev => {
-   //       const newDate = new Date(prev);
-   //       if (direction === 'prev') {
-   //          newDate.setMonth(prev.getMonth() - 1);
-   //       } else {
-   //          newDate.setMonth(prev.getMonth() + 1);
-   //       }
-   //       setSelectedYear(newDate.getFullYear());
-   //       return newDate;
-   //    });
-   // };
-
    const navigateYear = (direction: 'prev' | 'next') => {
       setSelectedYear(prev => {
          const currentYear = new Date().getFullYear();
@@ -228,129 +261,25 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       );
    };
 
-   // const renderCalendar = () => {
-   //    const daysInMonth = getDaysInMonth(currentDate);
-   //    const firstDay = getFirstDayOfMonth(currentDate);
-   //    const days = [];
-   //    const weekdays = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+   const hasDiaryData = (day: number) => {
+      if (!diaryDate?.data || diaryDate.data.length === 0) return false;
 
-   //    days.push(
-   //       <Box key="calendar-header" sx={{ mb: 2 }}>
-   //          <Box sx={{
-   //             display: 'flex',
-   //             justifyContent: 'space-between',
-   //             alignItems: 'center',
-   //             mb: 2
-   //          }}>
-   //             <IconButton
-   //                size="small"
-   //                onClick={() => navigateMonth('prev')}
-   //                sx={{ color: '#6b7280' }}
-   //             >
-   //                <ChevronLeft />
-   //             </IconButton>
-   //             <Typography sx={{
-   //                fontWeight: 600,
-   //                fontSize: '16px',
-   //                color: '#111827'
-   //             }}>
-   //                {currentDate.toLocaleDateString('th-TH', {
-   //                   month: 'long',
-   //                   year: 'numeric'
-   //                })}
-   //             </Typography>
-   //             <IconButton
-   //                size="small"
-   //                onClick={() => navigateMonth('next')}
-   //                sx={{ color: '#6b7280' }}
-   //             >
-   //                <ChevronRight />
-   //             </IconButton>
-   //          </Box>
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      const targetDate = `${year}-${month}-${dayStr}`;
 
-   //          <Grid container spacing={0}>
-   //             {weekdays.map((day, index) => (
-   //                <Grid item xs key={`weekday-${index}`} sx={{
-   //                   display: 'flex',
-   //                   justifyContent: 'center',
-   //                   py: 1
-   //                }}>
-   //                   <Typography sx={{
-   //                      fontSize: '12px',
-   //                      color: '#6b7280',
-   //                      fontWeight: 500
-   //                   }}>
-   //                      {day}
-   //                   </Typography>
-   //                </Grid>
-   //             ))}
-   //          </Grid>
-   //       </Box>
-   //    );
-
-   //    for (let i = 0; i < firstDay; i++) {
-   //       days.push(
-   //          <Grid item xs key={`empty-${currentDate.getMonth()}-${i}`} sx={{
-   //             display: 'flex',
-   //             justifyContent: 'center',
-   //             py: 0.5
-   //          }}>
-   //             <Box sx={{ width: 32, height: 32 }} />
-   //          </Grid>
-   //       );
-   //    }
-
-   //    for (let day = 1; day <= daysInMonth; day++) {
-   //       const actualToday = isActualToday(day);
-   //       const selected = isSelectedDay(day);
-
-   //       days.push(
-   //          <Grid item xs key={`day-${currentDate.getMonth()}-${day}`} sx={{
-   //             display: 'flex',
-   //             justifyContent: 'center',
-   //             py: 0.5
-   //          }}>
-   //             <Button
-   //                onClick={() => selectDate(day)}
-   //                sx={{
-   //                   width: 32,
-   //                   height: 32,
-   //                   minWidth: 32,
-   //                   borderRadius: '50%',
-   //                   fontSize: '14px',
-   //                   fontWeight: selected ? 600 : actualToday ? 600 : 400,
-   //                   color: selected ? 'white' : actualToday ? '#7e57c2' : '#374151',
-   //                   bgcolor: selected ? '#7e57c2' : 'transparent',
-   //                   '&:hover': {
-   //                      bgcolor: selected ? '#7e57c2' : '#f8f9fa',
-   //                   },
-   //                   border: actualToday && !selected ? '2px solid #7e57c2' : 'none',
-   //                   transition: 'all 0.2s ease-in-out',
-   //                }}
-   //             >
-   //                {day}
-   //             </Button>
-   //          </Grid>
-   //       );
-   //    }
-
-   //    return (
-   //       <Box>
-   //          {days[0]}
-   //          <Grid container spacing={0}>
-   //             {days.slice(1)}
-   //          </Grid>
-   //       </Box>
-   //    );
-   // };
+      return diaryDate.data.some(dateString => {
+         const date = new Date(dateString);
+         const dateOnly = date.toISOString().split('T')[0];
+         return dateOnly === targetDate;
+      });
+   };
 
    const months = [
       'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
       'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
    ];
-
-   // const currentYear = new Date().getFullYear();
-   // const years = Array.from({ length: 11 }, (_, i) => currentYear - 4 + i);
 
    const drawer = (
       <Box sx={{
@@ -545,13 +474,14 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                                  const day = i + 1;
                                  const actualToday = isActualToday(day);
                                  const selected = isSelectedDay(day);
+                                 const hasData = hasDiaryData(day);
 
                                  return (
                                     // @ts-ignore
                                     <Grid item xs key={`day-${currentDate.getMonth()}-${day}`} sx={{
                                        display: 'flex',
                                        justifyContent: 'center',
-                                       py: 0.2
+                                       py: 0.4
                                     }}>
                                        <Button
                                           onClick={() => selectDate(day)}
@@ -561,15 +491,31 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                                              minWidth: 20,
                                              borderRadius: '50%',
                                              fontSize: '10px',
-                                             fontWeight: selected ? 600 : actualToday ? 600 : 400,
-                                             color: selected ? 'white' : actualToday ? '#8b5cf6' : '#374151',
-                                             bgcolor: selected ? '#7e57c2' : 'transparent',
+                                             fontWeight: selected ? 600 : hasData ? 600 : 400,
+                                             color: selected
+                                                ? 'white'
+                                                : hasData
+                                                   ? 'white'
+                                                   : '#9ca3af',
+                                             bgcolor: selected
+                                                ? '#5b21b6'
+                                                : hasData
+                                                   ? '#7e57c2'
+                                                   : 'transparent',
                                              '&:hover': {
-                                                bgcolor: selected ? '#673ab7' : '#f3f4f6',
+                                                bgcolor: selected
+                                                   ? '#4c1d95'
+                                                   : hasData
+                                                      ? '#6d28d9'
+                                                      : '#f3f4f6',
+                                                transform: 'scale(1.1)',
                                              },
-                                             border: actualToday && !selected ? '1px solid #8b5cf6' : 'none',
+                                             border: 'none',
                                              p: 0,
                                              transition: 'all 0.2s ease-in-out',
+                                             boxShadow: hasData || selected
+                                                ? '0 2px 8px rgba(126, 87, 194, 0.3)'
+                                                : 'none',
                                           }}
                                        >
                                           {day}
@@ -847,12 +793,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         borderRight: '1px solid #f0f0f0',
                         position: 'fixed',
                         height: '100vh',
-                        // maxHeight: '100%',
-                        // overflowY: 'auto',
-                        // scrollbarWidth: 'none',
-                        // '&::-webkit-scrollbar': {
-                        //    display: 'none',
-                        // },
                         transition: theme.transitions.create('width', {
                            easing: theme.transitions.easing.sharp,
                            duration: theme.transitions.duration.enteringScreen,
@@ -869,7 +809,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                sx={{
                   flexGrow: 1,
                   width: {
-                     // md: desktopOpen ? `calc(100% - ${drawerWidth}px)` : '100%'
                      ml: `${drawerWidth}px`,
                   },
                   bgcolor: '#fafafa',

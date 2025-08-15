@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Box, IconButton, TextField, Button } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { Box, IconButton, TextField, Button, Typography, Fade } from '@mui/material';
+import { Close as CloseIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { fetchWithBase } from '@/app/unit/fetchWithUrl';
 
@@ -112,61 +112,180 @@ export default function AddNewStudent({ onClose, advisorId, onStudentAdvisorSave
    };
 
    return (
-      <Box
-         sx={{
-            backgroundColor: '#ffffff',
-            width: '100%',
-            position: 'relative',
-            p: 2,
-            borderRadius: 2,
-         }}
-      >
-         <IconButton
-            onClick={onClose}
+      <Fade in timeout={200}>
+         <Box
             sx={{
-               position: 'absolute',
-               right: 4,
-               top: 4,
-               color: '#666',
-               padding: '4px'
+               width: '100%',
+               p: 2,
+               position: 'relative',
             }}
          >
-            <CloseIcon fontSize="small" />
-         </IconButton>
+            <Box sx={{
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'space-between',
+               mb: 3,
+               pb: 2,
+               borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
+            }}>
+               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{
+                     p: 1.5,
+                     backgroundColor: 'rgba(156, 39, 176, 0.08)',
+                     borderRadius: 2,
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center'
+                  }}>
+                     <PersonAddIcon sx={{ color: '#7E57C2', fontSize: 20 }} />
+                  </Box>
+                  <Typography
+                     variant="h6"
+                     sx={{
+                        fontWeight: 600,
+                        color: '#1a1a1a',
+                        fontSize: '1.1rem',
+                        lineHeight: 1.2
+                     }}
+                  >
+                     เพิ่มนิสิตใหม่
+                  </Typography>
+               </Box>
 
-         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, pt: 3 }}>
-            <TextField
-               fullWidth
-               label="อีเมล์สำหรับนิสิต"
-               type="email"
-               value={email}
-               onChange={(e) => setEmail(e.target.value)}
-               placeholder="student@up.ac.th"
-               variant="outlined"
-               size="small"
-               sx={{ mb: 3 }}
-               disabled={loading}
-            />
-
-            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-               <Button
-                  variant="outlined"
+               <IconButton
                   onClick={onClose}
+                  sx={{
+                     color: '#666',
+                     padding: '8px',
+                     borderRadius: 2,
+                     transition: 'all 0.2s ease',
+                     '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                        color: '#333'
+                     }
+                  }}
+               >
+                  <CloseIcon fontSize="small" />
+               </IconButton>
+            </Box>
+
+            <Box component="form" onSubmit={handleSubmit}>
+               <TextField
+                  fullWidth
+                  label="อีเมล์สำหรับนิสิต"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="student@up.ac.th"
+                  variant="outlined"
                   disabled={loading}
-                  size="small"
-               >
-                  ยกเลิก
-               </Button>
-               <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={loading || !email}
-                  size="small"
-               >
-                  {loading ? 'กำลังเพิ่ม...' : 'เพิ่มนิสิต'}
-               </Button>
+                  sx={{
+                     mb: 4,
+                     '& .MuiOutlinedInput-root': {
+                        borderRadius: 2.5,
+                        transition: 'all 0.3s ease',
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        '&:hover': {
+                           backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                        },
+                        '&.Mui-focused': {
+                           backgroundColor: '#ffffff',
+                           boxShadow: '0 0 0 3px rgba(156, 39, 176, 0.1)',
+                        },
+                        '& fieldset': {
+                           borderColor: 'rgba(0, 0, 0, 0.12)',
+                           transition: 'all 0.3s ease',
+                        },
+                        '&:hover fieldset': {
+                           borderColor: 'rgba(0, 0, 0, 0.2)',
+                        },
+                        '&.Mui-focused fieldset': {
+                           borderColor: '#7E57C2',
+                           borderWidth: '2px',
+                        },
+                     },
+                     '& .MuiInputLabel-root': {
+                        color: '#666',
+                        fontWeight: 500,
+                        '&.Mui-focused': {
+                           color: '#7E57C2',
+                           fontWeight: 600,
+                        }
+                     },
+                     '& .MuiOutlinedInput-input': {
+                        padding: '14px 16px',
+                        fontSize: '0.95rem',
+                     }
+                  }}
+               />
+
+               <Box sx={{
+                  display: 'flex',
+                  gap: 2,
+                  justifyContent: 'flex-end',
+                  pt: 1
+               }}>
+                  <Button
+                     variant="outlined"
+                     onClick={onClose}
+                     disabled={loading}
+                     sx={{
+                        borderRadius: 2.5,
+                        px: 3,
+                        py: 1.2,
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        fontSize: '0.9rem',
+                        color: '#666',
+                        borderColor: 'rgba(0, 0, 0, 0.12)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                        '&:hover': {
+                           backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                           borderColor: 'rgba(0, 0, 0, 0.2)',
+                           transform: 'translateY(-1px)',
+                        },
+                        '&:disabled': {
+                           opacity: 0.6,
+                        }
+                     }}
+                  >
+                     ยกเลิก
+                  </Button>
+                  <Button
+                     type="submit"
+                     variant="contained"
+                     disabled={loading || !email}
+                     sx={{
+                        borderRadius: 2.5,
+                        px: 4,
+                        py: 1.2,
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        fontSize: '0.9rem',
+                        backgroundColor: '#7E57C2',
+                        boxShadow: '0 2px 12px rgba(156, 39, 176, 0.25)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                        '&:hover': {
+                           backgroundColor: '#673ab7',
+                           boxShadow: '0 4px 20px rgba(156, 39, 176, 0.4)',
+                           transform: 'translateY(-2px)',
+                        },
+                        '&:active': {
+                           transform: 'translateY(0px)',
+                        },
+                        '&:disabled': {
+                           backgroundColor: 'rgba(0, 0, 0, 0.12)',
+                           color: 'rgba(0, 0, 0, 0.26)',
+                           boxShadow: 'none',
+                           transform: 'none',
+                        }
+                     }}
+                  >
+                     {loading ? 'กำลังเพิ่ม...' : 'เพิ่มนิสิต'}
+                  </Button>
+               </Box>
             </Box>
          </Box>
-      </Box>
+      </Fade>
    );
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import SendIcon from '@mui/icons-material/Send';
@@ -44,22 +44,23 @@ export default function Comment({ diary_Id, user_Id }: CommentProps) {
    const [content, setContent] = useState('');
    const [comment, setComment] = useState<CommentData[]>([]);
 
-   const fetchComment = async () => {
+   const fetchComment = useCallback(async () => {
       try {
-         const res = await fetchWithBase(`/api/comment?DiaryID=${diary_Id}`)
+         const res = await fetchWithBase(`/api/comment?DiaryID=${diary_Id}`);
          if (!res.ok) throw new Error('Failed to fetch comment');
          const data = await res.json();
          setComment(data.data);
       } catch (err) {
          console.error('Error fetching user:', err);
       }
-   }
+   }, [diary_Id]);
 
    useEffect(() => {
       if (diary_Id) {
          fetchComment();
       }
-   }, [diary_Id])
+   }, [diary_Id, fetchComment]);
+
 
    const handleSend = async (e: React.FormEvent) => {
       e.preventDefault()

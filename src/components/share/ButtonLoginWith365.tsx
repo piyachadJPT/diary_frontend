@@ -4,7 +4,6 @@ import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import { Button } from '@mui/material'
-// import { Microsoft } from '@mui/icons-material'
 import Swal from 'sweetalert2'
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
 

@@ -87,9 +87,11 @@ interface NewDiaryProps {
    onDiarySaved?: () => void;
    editDiary?: DiaryWithDetails | null;
    onEditComplete?: () => void;
+   params?: { date: string };
 }
 
-export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: NewDiaryProps) {
+export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, params }: NewDiaryProps) {
+   const date = params?.date;
    const { data: session } = useSession();
    const [open, setOpen] = useState(false);
    const [status, setStatus] = useState('veryHappy');
@@ -269,6 +271,19 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
    };
 
+   const formatDateForBackdatedEntry = (dateString: string) => {
+      try {
+         if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const dateObj = new Date(dateString + 'T00:00:00');
+            return dateObj.toISOString();
+         }
+         return new Date(dateString).toISOString();
+      } catch (error) {
+         console.error('Error formatting date:', error);
+         return new Date().toISOString();
+      }
+   };
+
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
 
@@ -296,15 +311,34 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
       setUploadProgress(0);
 
       try {
+         // 1. ถ้าเป็นการแก้ไข ใช้ DiaryDate เดิม
+         // 2. ถ้ามี date จาก params (บันทึกย้อนหลัง) ใช้วันที่นั้น
+         // 3. ถ้าไม่มี ใช้วันที่ปัจจุบัน
+         let diaryDate: string;
+
+         if (isEditMode) {
+            // การแก้ไข: ใช้วันที่เดิม
+            diaryDate = editDiary!.DiaryDate;
+         } else if (date) {
+            // บันทึกใหม่ที่มีการระบุวันที่ (บันทึกย้อนหลัง): ใช้วันที่ที่ระบุ
+            diaryDate = formatDateForBackdatedEntry(date);
+            console.log('Using backdated date:', date, '-> formatted:', diaryDate);
+         } else {
+            // บันทึกใหม่ปกติ: ใช้วันที่ปัจจุบัน
+            diaryDate = new Date().toISOString();
+         }
+
          const diaryData: Diary = {
             StudentID: userId,
             ContentHTML: content,
             ContentDelta: contentDelta,
             IsShared: shareOption,
             AllowComment: shareOption !== 'personal',
-            DiaryDate: isEditMode ? editDiary!.DiaryDate : new Date().toISOString(),
+            DiaryDate: diaryDate,
             Status: status
          };
+
+         console.log('Submitting diary with data:', diaryData);
 
          let response;
          let diaryId;
@@ -379,10 +413,11 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
 
          const successMessage = isEditMode ? "แก้ไขบันทึกสำเร็จ" : "บันทึกบันทึกสำเร็จ";
          const fileMessage = selectedFiles.length > 0 ? ` พร้อมไฟล์แนบ ${selectedFiles.length} ไฟล์` : "";
+         const dateMessage = date && !isEditMode ? ` ลงวันที่ ${new Date(date).toLocaleDateString('th-TH')}` : "";
 
          Swal.fire({
             icon: "success",
-            text: successMessage + fileMessage,
+            text: successMessage + fileMessage + dateMessage,
             showConfirmButton: false,
             timer: 2000,
          });
@@ -465,6 +500,11 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete }: Ne
                }}>
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                      {isEditMode ? 'แก้ไขบันทึก' : 'บันทึกความคืบหน้า'}
+                     {date && !isEditMode && (
+                        <Typography variant="body2" component="span" sx={{ ml: 1, color: '#666' }}>
+                           (ลงวันที่ {new Date(date).toLocaleDateString('th-TH')})
+                        </Typography>
+                     )}
                   </Typography>
                   <IconButton
                      onClick={handleClose}

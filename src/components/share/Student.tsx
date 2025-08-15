@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import {
    Paper,
    Box,
@@ -75,6 +73,7 @@ const Student = ({ advisorId }: StudentProps) => {
       if (advisorId) {
          try {
             setIsLoading(true);
+            setError(null);
             const res = await fetchWithBase(`/api/studentAdvisor?advisor_id=${advisorId}`)
 
             if (!res.ok) {
@@ -89,6 +88,10 @@ const Student = ({ advisorId }: StudentProps) => {
          } finally {
             setIsLoading(false);
          }
+      } else {
+         setStudentAdvisor([]);
+         setIsLoading(false);
+         setError(null);
       }
    }, [advisorId])
 
@@ -170,20 +173,86 @@ const Student = ({ advisorId }: StudentProps) => {
 
    if (error) {
       return (
-         <Paper
-            elevation={0}
-            sx={{
-               height: '100%',
-               width: '100%',
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'center',
-               borderRadius: 3,
-               border: '1px solid #e0e0e0'
-            }}
-         >
-            <Typography color="error">{error}</Typography>
-         </Paper>
+         <>
+            <Paper
+               elevation={0}
+               sx={{
+                  height: '100%',
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: 3,
+                  border: '1px solid #e0e0e0'
+               }}
+            >
+               <Box
+                  sx={{
+                     p: 2,
+                     pb: 0,
+                     flex: 1,
+                     overflowY: 'auto',
+                     // scrollbarWidth: 'none',
+                     // '&::-webkit-scrollbar': {
+                     //    display: 'none',
+                     // },
+                  }}>
+                  <Box
+                     sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '100%',
+                     }}
+                  >
+                     <Typography variant="body2" color="text.secondary">
+                        ไม่มีข้อมูลนิสิต
+                     </Typography>
+                  </Box>
+
+               </Box>
+
+               <Box sx={{ p: 3, borderTop: '1px solid #e0e0e0' }}>
+                  <Button
+                     fullWidth
+                     variant="contained"
+                     onClick={handleOpenDialog}
+                     sx={{
+                        py: 0.5,
+                        backgroundColor: '#7E57C2',
+                        color: '#ffffff',
+                        borderRadius: '3px',
+                        textTransform: 'none',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        boxShadow: 'none',
+                        '&:hover': {
+                           backgroundColor: '#8C7BB7',
+                           boxShadow: 'none',
+                        },
+                     }}
+                  >
+                     เพิ่มนิสิตใหม่
+                  </Button>
+               </Box>
+            </Paper>
+
+            <Dialog
+               open={openDialog}
+               onClose={handleCloseDialog}
+               maxWidth="md"
+               fullWidth
+               PaperProps={{
+                  sx: {
+                     minHeight: '100px',
+                     backgroundColor: '#ffffff',
+                     borderRadius: 3,
+                     p: 1
+                  }
+               }}
+            >
+               <AddNewStudent advisorId={advisorId} onClose={handleCloseDialog} onStudentAdvisorSave={fetchStudentAdvisor} />
+            </Dialog>
+         </>
       );
    }
 
@@ -206,10 +275,25 @@ const Student = ({ advisorId }: StudentProps) => {
                   pb: 0,
                   flex: 1,
                   overflowY: 'auto',
-                  scrollbarWidth: 'none',
+                  flexDirection: 'column',
                   '&::-webkit-scrollbar': {
-                     display: 'none',
+                     width: '8px',
                   },
+                  '&::-webkit-scrollbar-track': {
+                     background: '#f1f1f1',
+                     borderRadius: '4px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                     background: '#c1c1c1',
+                     borderRadius: '4px',
+                     '&:hover': {
+                        background: '#a1a1a1',
+                     },
+                  }
+                  // scrollbarWidth: 'none',
+                  // '&::-webkit-scrollbar': {
+                  //    display: 'none',
+                  // },
                }}>
                {studentAdvisor.length > 0 ? studentAdvisor.map((item) => (
                   <Paper
@@ -287,7 +371,7 @@ const Student = ({ advisorId }: StudentProps) => {
                )) : (
                   <Box sx={{ textAlign: 'center', py: 4 }}>
                      <Typography color="text.secondary">
-                        ไม่มีนิสิตในการดูแล
+                        ไม่มีข้อมูลนิสิต
                      </Typography>
                   </Box>
                )}

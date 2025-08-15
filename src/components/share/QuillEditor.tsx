@@ -34,7 +34,7 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
 
       quillInstance.current = quill;
     }
-  }, [onChange]);
+  }, [onChange, value]);
 
   useEffect(() => {
     if (quillInstance.current) {

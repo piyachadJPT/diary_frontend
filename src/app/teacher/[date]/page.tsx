@@ -27,6 +27,7 @@ import SentimentSatisfiedAltIcon from '@mui/icons-material/SentimentSatisfiedAlt
 import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import Comment from '@/components/share/Comment';
 
 interface DiaryEntry {
@@ -370,11 +371,21 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
                      );
                   })
             ) : (
-               <Paper sx={{ p: 4, textAlign: 'center' }}>
-                  <Typography variant="body1" color="text.secondary">
-                     ไม่พบบันทึกสำหรับวันที่ {formatDate(date)}
+               <Box sx={{ textAlign: 'center', py: 2 }}>
+                  <CalendarTodayIcon
+                     sx={{
+                        fontSize: 28,
+                        color: 'text.disabled',
+                        mb: 1,
+                        opacity: 0.6,
+                        display: 'block',
+                        mx: 'auto'
+                     }}
+                  />
+                  <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary' }}>
+                     ไม่พบบันทึกสำหรับวันนี้
                   </Typography>
-               </Paper>
+               </Box>
             )}
          </Box>
       </TeacherLayout>
