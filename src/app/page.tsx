@@ -338,7 +338,7 @@ export default function Home() {
                                                 component="button"
                                                 onClick={() => setShowEmailLogin(true)}
                                                 sx={{
-                                                    color: '#7c3aed',
+                                                    color: '#673ab7',
                                                     textDecoration: 'none',
                                                     fontSize: '0.875rem',
                                                     fontWeight: 500,
@@ -428,7 +428,7 @@ export default function Home() {
                                                     variant="contained"
                                                     disabled={loading}
                                                     sx={{
-                                                        bgcolor: '#7c3aed',
+                                                        bgcolor: '#673ab7',
                                                         color: 'white',
                                                         py: 1.5,
                                                         borderRadius: 2,
@@ -463,8 +463,8 @@ export default function Home() {
                                                     onClick={handleSwitchToRegister}
                                                     disabled={loading}
                                                     sx={{
-                                                        borderColor: '#7c3aed',
-                                                        color: '#7c3aed',
+                                                        borderColor: '#673ab7',
+                                                        color: '#673ab7',
                                                         py: 1.5,
                                                         borderRadius: 2,
                                                         fontSize: '1rem',
@@ -486,7 +486,7 @@ export default function Home() {
                                                 onClick={handleBackToMain}
                                                 disabled={loading}
                                                 sx={{
-                                                    color: loading ? 'rgba(124, 58, 237, 0.5)' : '#7c3aed',
+                                                    color: loading ? 'rgba(124, 58, 237, 0.5)' : '#673ab7',
                                                     textDecoration: 'none',
                                                     fontSize: '0.875rem',
                                                     fontWeight: 500,
