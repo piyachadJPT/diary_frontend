@@ -47,6 +47,15 @@ export interface DiaryDateResponse {
    data: string[];
 }
 
+interface User {
+   id: number;
+   name: string | null;
+   email: string;
+   role: string;
+   approved: boolean;
+   image: string | null;
+}
+
 const drawerWidth = 280;
 
 const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => {
@@ -55,7 +64,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const searchParams = useSearchParams();
    const theme = useTheme();
    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
+   const [user, setUser] = useState<User | null>(null);
    const [diaryDate, setDiaryDate] = useState<DiaryDateResponse | null>(null);
    const [userId, setUserId] = useState<number | null>(null);
    const [mobileOpen, setMobileOpen] = useState(false);
@@ -63,53 +72,91 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
    const [currentDate, setCurrentDate] = useState(new Date());
 
-   useEffect(() => {
-      if (status === 'unauthenticated') {
-         const doSignOut = async () => {
-            await Swal.fire({
-               icon: "success",
-               text: `กรุณาล็อคอินก่อนเข้าสู่ระบบ`,
-               showConfirmButton: false,
-               timer: 1000,
-            });
-            sessionStorage.clear()
-            await signOut({
-               callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
-            });
-         };
+   // ลบคอมเมนต์ออกถ้าต้องการให้ทำงาน
+   // useEffect(() => {
+   //    if (status === 'unauthenticated') {
+   //       const doSignOut = async () => {
+   //          await Swal.fire({
+   //             icon: "success",
+   //             text: `กรุณาล็อคอินก่อนเข้าสู่ระบบ`,
+   //             showConfirmButton: false,
+   //             timer: 1000,
+   //          });
+   //          sessionStorage.clear()
+   //          await signOut({
+   //             callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
+   //          });
+   //       };
 
-         doSignOut();
+   //       doSignOut();
+   //    }
+   // }, [status]);
+
+   async function getProfileFromToken() {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+
+      try {
+         const res = await fetchWithBase('/api/profile', {
+            method: 'GET',
+            headers: {
+               'Authorization': `Bearer ${token}`,
+               'Content-Type': 'application/json'
+            }
+         });
+
+         if (!res.ok) {
+            localStorage.removeItem('token');
+            return null;
+         }
+
+         const data = await res.json();
+         return data;
+      } catch (error) {
+         console.error('Error fetching profile:', error);
+         localStorage.removeItem('token');
+         return null;
       }
-   }, [status]);
+   }
 
    useEffect(() => {
-      if (status === 'authenticated' && session?.user?.email) {
-         const fetchUser = async () => {
+      async function fetchProfile() {
+         // ตรวจสอบ NextAuth session ก่อน
+         if (status === 'authenticated' && session?.user?.email && !user) {
             try {
-               const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
+               const res = await fetchWithBase(
+                  `/api/user?email=${encodeURIComponent(session.user.email)}`
+               );
                if (!res.ok) throw new Error('Failed to fetch user');
                const data = await res.json();
-               setUserId(data.ID);
+               setUser(data);
+               setUserId(data.id || data.ID);
             } catch (error) {
                console.error('Error fetching user:', error);
             }
-         };
-         fetchUser();
+         }
+         // ถ้าไม่มี NextAuth session หรือ unauthenticated ให้ตรวจสอบ localStorage token
+         else if (status === 'unauthenticated' || !session) {
+            const profile = await getProfileFromToken();
+            if (profile) {
+               setUser(profile);
+               setUserId(profile.id || profile.ID);
+            }
+         }
       }
-   }, [session, status]);
+
+      fetchProfile();
+   }, [session, status, user]);
 
    const fetchDiaryByDate = useCallback(async () => {
       if (userId) {
          try {
             const res = await fetchWithBase(`/api/diary/by-student?StudentID=${userId}`)
-
             if (!res.ok) {
                throw new Error('Failed to fetch student advisor data');
             }
-
             const data = await res.json()
             setDiaryDate(data)
-
          } catch (error) {
             console.error('Error fetching :', error);
          }
@@ -188,19 +235,31 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       setAnchorEl(null);
    };
 
+   // แก้ไข handleSignOut
    const handleSignOut = async () => {
       handleClose();
       setDesktopOpen(!desktopOpen);
+
       await Swal.fire({
          icon: "success",
          text: `กำลังออกจากระบบ`,
          showConfirmButton: false,
          timer: 1500,
       });
-      sessionStorage.clear()
-      await signOut({
-         callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
-      });
+
+      // ล้าง localStorage และ sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // ถ้ามี NextAuth session ให้ sign out
+      if (session) {
+         await signOut({
+            callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
+         });
+      } else {
+         // ถ้าไม่มี NextAuth session ให้ redirect ไปหน้าแรก
+         window.location.href = '/';
+      }
    };
 
    const getDaysInMonth = (date: Date) => {
@@ -291,43 +350,45 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       }}>
          <Box sx={{ p: 1.5, borderBottom: '1px solid #f0f0f0' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-               <IconButton
-                  size="large"
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-               >
-                  {session?.user?.image ? (
-                     <Avatar
-                        src={session.user.image || '/default-avatar.svg'}
-                        alt={session.user.name || 'User'}
-                        sx={{ width: 60, height: 60 }}
-                     />
-                  ) : (
-                     <AccountCircle sx={{ fontSize: '28px' }} />
-                  )}
-               </IconButton>
-               <Box>
-                  <Typography
-                     sx={{
-                        color: '#111827',
-                        fontWeight: 600,
-                        fontSize: '16px',
-                        lineHeight: 1.2
-                     }}
-                  >
-                     {session?.user?.name}
-                  </Typography>
-                  <Typography
-                     sx={{
-                        color: '#6b7280',
-                        fontSize: '12px',
-                        mt: 0.5
-                     }}
-                  >
-                     {session?.user?.email}
-                  </Typography>
-               </Box>
+              <IconButton
+  size="large"
+  aria-label="account of current user"
+  aria-controls="menu-appbar"
+  aria-haspopup="true"
+>
+  {session?.user?.image || user?.image ? (
+    <Avatar
+      src={session?.user?.image || user?.image || '/default-avatar.svg'}
+      alt={session?.user?.name || user?.name || 'User'}
+      sx={{ width: 60, height: 60 }}
+    />
+  ) : (
+    <AccountCircle sx={{ fontSize: '28px' }} />
+  )}
+</IconButton>
+
+<Box>
+  <Typography
+    sx={{
+      color: '#111827',
+      fontWeight: 600,
+      fontSize: '16px',
+      lineHeight: 1.2
+    }}
+  >
+    {session?.user?.name || user?.name || 'User'}
+  </Typography>
+  <Typography
+    sx={{
+      color: '#6b7280',
+      fontSize: '12px',
+      mt: 0.5
+    }}
+  >
+    {session?.user?.email || user?.email || 'email@example.com'}
+  </Typography>
+</Box>
+
             </Box>
          </Box>
 
@@ -634,37 +695,40 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         sm: 'flex',
                      }, alignItems: 'center', gap: 1
                   }}>
-                     <Stack sx={{
-                        flexGrow: 1,
-                        alignItems: 'flex-end',
-                        ml: 'auto',
-                     }}>
-                        <Typography
-                           variant="h6"
-                           noWrap
-                           component="div"
-                           sx={{
-                              color: '#111827',
-                              fontWeight: 700,
-                              fontSize: '16px',
-                           }}
-                        >
-                           {session?.user?.name}
-                        </Typography>
-                        <Typography
-                           variant="caption"
-                           noWrap
-                           component="div"
-                           sx={{
-                              color: '#6b7280',
-                              fontWeight: 400,
-                              fontSize: '12px',
-                              mt: -0.5,
-                           }}
-                        >
-                           {session?.user?.email}
-                        </Typography>
-                     </Stack>
+                    <Stack
+  sx={{
+    flexGrow: 1,
+    alignItems: 'flex-end',
+    ml: 'auto',
+  }}
+>
+  <Typography
+    variant="h6"
+    noWrap
+    component="div"
+    sx={{
+      color: '#111827',
+      fontWeight: 700,
+      fontSize: '16px',
+    }}
+  >
+    {session?.user?.name || user?.name || 'User'}
+  </Typography>
+  <Typography
+    variant="caption"
+    noWrap
+    component="div"
+    sx={{
+      color: '#6b7280',
+      fontWeight: 400,
+      fontSize: '12px',
+      mt: -0.5,
+    }}
+  >
+    {session?.user?.email || user?.email || 'email@example.com'}
+  </Typography>
+</Stack>
+
                      <IconButton
                         size="large"
                         aria-label="account of current user"
@@ -678,15 +742,16 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                            },
                         }}
                      >
-                        {session?.user?.image ? (
-                           <Avatar
-                              src={session.user.image || '/default-avatar.svg'}
-                              alt={session.user.name || 'User'}
-                              sx={{ width: 40, height: 40 }}
-                           />
-                        ) : (
-                           <AccountCircle sx={{ fontSize: '28px' }} />
-                        )}
+                        {session?.user?.image || user?.image ? (
+  <Avatar
+    src={session?.user?.image || user?.image || '/default-avatar.svg'}
+    alt={session?.user?.name || user?.name || 'User'}
+    sx={{ width: 60, height: 60 }}
+  />
+) : (
+  <AccountCircle sx={{ fontSize: '28px' }} />
+)}
+
                      </IconButton>
                      <Menu
                         id="menu-appbar"
@@ -829,4 +894,4 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    );
 };
 
-export default DiatyLayout;
+export default DiatyLayout

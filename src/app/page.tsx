@@ -1,16 +1,246 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import AuthLayout from "@/components/layouts/AuthLayout"
 import ButtonLoginWith365 from "../components/share/ButtonLoginWith365"
+import Swal from 'sweetalert2'
+import { fetchWithBase } from '@/app/unit/fetchWithUrl'
 import {
     Box,
     Container,
     Paper,
     Typography,
-    alpha
+    TextField,
+    Button,
+    Link,
+    alpha,
+    CircularProgress
 } from '@mui/material'
 
 export default function Home() {
+    const router = useRouter()
+    const [showEmailLogin, setShowEmailLogin] = useState(false)
+    const [showRegister, setShowRegister] = useState(false)
+    const [name, setName] = useState('')
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!email || !password) {
+            Swal.fire({
+                icon: 'error',
+                text: 'กรุณากรอกอีเมลและรหัสผ่าน',
+                showConfirmButton: false,
+                timer: 2500,
+            });
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Swal.fire({
+                icon: 'error',
+                text: 'กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง',
+                showConfirmButton: false,
+                timer: 2500,
+            });
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetchWithBase('/api/auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const userRole = data.role.toLowerCase();
+                const now = new Date();
+                const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                localStorage.setItem('token', data.token);
+
+                Swal.fire({
+                    icon: 'success',
+                    text: 'เข้าสู่ระบบสำเร็จ',
+                    showConfirmButton: false,
+                    timer: 1500,
+                }).then(() => {
+                    if (userRole === 'student') {
+                        router.push(`/diary/${dateString}`);
+                    } else if (userRole === 'advisor') {
+                        router.push('/teacher');
+                    } else {
+                        throw new Error(`Unknown role: ${data.role}`);
+                    }
+                });
+            } else {
+                let errorMessage = 'ไม่สามารถเข้าสู่ระบบได้';
+
+                if (data.error === 'บัญชีของคุณยังไม่ได้รับการอนุมัติ') {
+                    errorMessage = 'บัญชีของคุณยังไม่ได้รับการอนุมัติ';
+                } else if (data.error === 'Incorrect password') {
+                    errorMessage = 'รหัสผ่านไม่ถูกต้อง';
+                } else if (data.error === 'Email and password are required') {
+                    errorMessage = 'กรุณากรอกอีเมลและรหัสผ่าน';
+                } else if (data.error) {
+                    errorMessage = data.error;
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    text: errorMessage,
+                    showConfirmButton: false,
+                    timer: 3000,
+                });
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            Swal.fire({
+                icon: 'error',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+                showConfirmButton: false,
+                timer: 2500,
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+
+        if (!name || !email || !password || !confirmPassword) {
+            Swal.fire({
+                icon: 'error',
+                text: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
+                showConfirmButton: false,
+                timer: 2500,
+            })
+            return
+        }
+
+        if (password !== confirmPassword) {
+            Swal.fire({
+                icon: 'error',
+                text: 'กรุณาตรวจสอบรหัสผ่านและการยืนยันรหัสผ่านให้ตรงกัน',
+                showConfirmButton: false,
+                timer: 2500,
+            })
+            return
+        }
+
+        if (password.length < 6) {
+            Swal.fire({
+                icon: 'error',
+                text: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+                showConfirmButton: false,
+                timer: 2500,
+            })
+            return
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+            Swal.fire({
+                icon: 'error',
+                text: 'กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง',
+                showConfirmButton: false,
+                timer: 2500,
+            })
+            return
+        }
+
+        setLoading(true)
+
+        try {
+            const response = await fetchWithBase('/api/user/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    password,
+                }),
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    text: 'สมัครสมาชิกสำเร็จ กรุณารอการอนุมัติจากผู้ดูแลระบบ',
+                    showConfirmButton: false,
+                    timer: 2500,
+                }).then(() => {
+                    setName('')
+                    setEmail('')
+                    setPassword('')
+                    setConfirmPassword('')
+                    setShowRegister(false)
+                })
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    text: data.error || 'ไม่สามารถสมัครสมาชิกได้ กรุณาลองใหม่อีกครั้ง',
+                    showConfirmButton: false,
+                    timer: 2500,
+                })
+            }
+        } catch (error) {
+            console.error('Registration error:', error)
+            Swal.fire({
+                icon: 'error',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+                showConfirmButton: false,
+                timer: 2500,
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSwitchToRegister = () => {
+        setShowRegister(true)
+        setName('')
+        setEmail('')
+        setPassword('')
+        setConfirmPassword('')
+    }
+
+    // const handleSwitchToLogin = () => {
+    //     setShowRegister(false)
+    //     setName('')
+    //     setEmail('')
+    //     setPassword('')
+    //     setConfirmPassword('')
+    // }
+
+    const handleBackToMain = () => {
+        setShowEmailLogin(false)
+        setShowRegister(false)
+        setName('')
+        setEmail('')
+        setPassword('')
+        setConfirmPassword('')
+    }
 
     return (
         <AuthLayout>
@@ -83,10 +313,193 @@ export default function Home() {
                                             fontWeight: 400
                                         }}
                                     >
-                                        เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน
+                                        {!showEmailLogin
+                                            ? 'เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน'
+                                            : showRegister
+                                                ? 'สมัครสมาชิกใหม่'
+                                                : 'เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน'
+                                        }
                                     </Typography>
 
-                                    <ButtonLoginWith365 />
+                                    {!showEmailLogin ? (
+                                        <Box>
+                                            <ButtonLoginWith365 />
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    color: alpha('#9e9e9e', 0.6),
+                                                    my: 2,
+                                                    fontSize: '0.875rem'
+                                                }}
+                                            >
+                                                หรือ
+                                            </Typography>
+                                            <Link
+                                                component="button"
+                                                onClick={() => setShowEmailLogin(true)}
+                                                sx={{
+                                                    color: '#7c3aed',
+                                                    textDecoration: 'none',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 500,
+                                                    cursor: 'pointer',
+                                                    '&:hover': {
+                                                        textDecoration: 'underline'
+                                                    }
+                                                }}
+                                            >
+                                                เข้าสู่ระบบด้วย Email/Password
+                                            </Link>
+                                        </Box>
+                                    ) : (
+                                        <Box>
+                                            <Box component="form" onSubmit={showRegister ? handleRegisterSubmit : handleEmailLogin}>
+                                                {showRegister && (
+                                                    <TextField
+                                                        fullWidth
+                                                        label="ชื่อ-นามสกุล"
+                                                        type="text"
+                                                        value={name}
+                                                        onChange={(e) => setName(e.target.value)}
+                                                        required
+                                                        disabled={loading}
+                                                        sx={{
+                                                            mb: 3,
+                                                            '& .MuiOutlinedInput-root': {
+                                                                borderRadius: 2,
+                                                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                <TextField
+                                                    fullWidth
+                                                    label="อีเมล"
+                                                    type="email"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    required
+                                                    disabled={loading}
+                                                    sx={{
+                                                        mb: 3,
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2,
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                                        }
+                                                    }}
+                                                />
+                                                <TextField
+                                                    fullWidth
+                                                    label="รหัสผ่าน"
+                                                    type="password"
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    required
+                                                    disabled={loading}
+                                                    sx={{
+                                                        mb: showRegister ? 3 : 4,
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2,
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                                        }
+                                                    }}
+                                                />
+                                                {showRegister && (
+                                                    <TextField
+                                                        fullWidth
+                                                        label="ยืนยันรหัสผ่าน"
+                                                        type="password"
+                                                        value={confirmPassword}
+                                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                                        required
+                                                        disabled={loading}
+                                                        sx={{
+                                                            mb: 4,
+                                                            '& .MuiOutlinedInput-root': {
+                                                                borderRadius: 2,
+                                                                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                                <Button
+                                                    type="submit"
+                                                    fullWidth
+                                                    variant="contained"
+                                                    disabled={loading}
+                                                    sx={{
+                                                        bgcolor: '#7c3aed',
+                                                        color: 'white',
+                                                        py: 1.5,
+                                                        borderRadius: 2,
+                                                        fontSize: '1rem',
+                                                        fontWeight: 500,
+                                                        textTransform: 'none',
+                                                        mb: 2,
+                                                        position: 'relative',
+                                                        '&:hover': {
+                                                            bgcolor: '#6d28d9'
+                                                        },
+                                                        '&:disabled': {
+                                                            bgcolor: 'rgba(124, 58, 237, 0.6)'
+                                                        }
+                                                    }}
+                                                >
+                                                    {loading ? (
+                                                        <CircularProgress
+                                                            size={24}
+                                                            sx={{ color: 'white' }}
+                                                        />
+                                                    ) : (
+                                                        showRegister ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'
+                                                    )}
+                                                </Button>
+                                            </Box>
+
+                                            {!showRegister && (
+                                                <Button
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    onClick={handleSwitchToRegister}
+                                                    disabled={loading}
+                                                    sx={{
+                                                        borderColor: '#7c3aed',
+                                                        color: '#7c3aed',
+                                                        py: 1.5,
+                                                        borderRadius: 2,
+                                                        fontSize: '1rem',
+                                                        fontWeight: 500,
+                                                        textTransform: 'none',
+                                                        mb: 3,
+                                                        '&:hover': {
+                                                            borderColor: '#6d28d9',
+                                                            backgroundColor: 'rgba(124, 58, 237, 0.04)'
+                                                        }
+                                                    }}
+                                                >
+                                                    สมัครสมาชิก
+                                                </Button>
+                                            )}
+                                            <Link
+                                                component="button"
+                                                type="button"
+                                                onClick={handleBackToMain}
+                                                disabled={loading}
+                                                sx={{
+                                                    color: loading ? 'rgba(124, 58, 237, 0.5)' : '#7c3aed',
+                                                    textDecoration: 'none',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 500,
+                                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                                    '&:hover': {
+                                                        textDecoration: loading ? 'none' : 'underline'
+                                                    }
+                                                }}
+                                            >
+                                                เข้าสู่ระบบด้วย UP Account
+                                            </Link>
+                                        </Box>
+                                    )}
                                 </Box>
                             </Box>
 
@@ -114,43 +527,6 @@ export default function Home() {
                                         justifyContent: 'center'
                                     }}
                                 >
-                                    <Box
-                                        sx={{
-                                            position: 'absolute',
-                                            width: '200px',
-                                            height: '200px',
-                                            borderRadius: '50%',
-                                            background: 'rgba(0, 0, 0, 0.02)',
-                                            top: '-50px',
-                                            right: '-50px',
-                                            animation: 'float 6s ease-in-out infinite'
-                                        }}
-                                    />
-                                    <Box
-                                        sx={{
-                                            position: 'absolute',
-                                            width: '150px',
-                                            height: '150px',
-                                            borderRadius: '50%',
-                                            background: 'rgba(0, 0, 0, 0.02)',
-                                            bottom: '-25px',
-                                            left: '-25px',
-                                            animation: 'float 8s ease-in-out infinite reverse'
-                                        }}
-                                    />
-                                    <Box
-                                        sx={{
-                                            position: 'absolute',
-                                            width: '100px',
-                                            height: '100px',
-                                            borderRadius: '50%',
-                                            background: 'rgba(0, 0, 0, 0.02)',
-                                            top: '30%',
-                                            left: '20%',
-                                            animation: 'float 10s ease-in-out infinite'
-                                        }}
-                                    />
-
                                     <Box
                                         component="img"
                                         src="/dose.png"

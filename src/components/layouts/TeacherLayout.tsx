@@ -31,43 +31,83 @@ import {
     AccountCircle,
 } from '@mui/icons-material';
 import Swal from 'sweetalert2';
+import ApproveUserPopup from '@/components/share/ApproveUserPopup';
+import { fetchWithBase } from "@/app/unit/fetchWithUrl";
 
 interface TeacherLayoutProps {
     children: ReactNode;
     selectedDate?: string;
 }
 
+interface User {
+    id: number;
+    name: string | null;
+    email: string;
+    role: string;
+    approved: boolean;
+    image: string | null;
+}
+
 const drawerWidth = 280;
 
 const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate }) => {
-    const { data: session, status } = useSession();
+    const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
     const theme = useTheme();
+    const [user, setUser] = useState<User | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
     const [desktopOpen, setDesktopOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [openApprovePopup, setOpenApprovePopup] = useState(false);
 
-    useEffect(() => {
-        if (status === 'unauthenticated') {
-            const doSignOut = async () => {
-                await Swal.fire({
-                    icon: "success",
-                    text: `กรุณาล็อคอินก่อนเข้าสู่ระบบ`,
-                    showConfirmButton: false,
-                    timer: 1000,
-                });
-                sessionStorage.clear()
-                await signOut({
-                    callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
-                });
-            };
+    // useEffect(() => {
+    //     if (status === 'unauthenticated') {
+    //         const doSignOut = async () => {
+    //             await Swal.fire({
+    //                 icon: "success",
+    //                 text: `กรุณาล็อคอินก่อนเข้าสู่ระบบ`,
+    //                 showConfirmButton: false,
+    //                 timer: 1000,
+    //             });
+    //             sessionStorage.clear()
+    //             await signOut({
+    //                 callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
+    //             });
+    //         };
 
-            doSignOut();
+    //         doSignOut();
+    //     }
+    // }, [status]);
+
+    async function getProfileFromToken() {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+
+        try {
+            const res = await fetchWithBase('/api/profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!res.ok) {
+                localStorage.removeItem('token');
+                return null;
+            }
+
+            const data = await res.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            localStorage.removeItem('token');
+            return null;
         }
-    }, [status]);
+    }
 
     const getInitialSelectedDate = () => {
         if (selectedDate) {
@@ -151,6 +191,15 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
         });
     };
 
+    const handleApproveNewUser = () => {
+        handleClose();
+        setOpenApprovePopup(true); // Open the popup
+    };
+
+    const handleCloseApprovePopup = () => {
+        setOpenApprovePopup(false); // Close the popup
+    };
+
     const handleToHome = () => {
         router.push('/teacher')
     }
@@ -162,7 +211,6 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                 flexDirection: 'column',
                 height: '100%',
                 boxSizing: 'border-box',
-                // bgcolor: '#7E57C2',
                 bgcolor: '#fff',
             }}
         >
@@ -174,10 +222,10 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                         aria-controls="menu-appbar"
                         aria-haspopup="true"
                     >
-                        {session?.user?.image ? (
+                        {session?.user?.image || user?.image ? (
                             <Avatar
-                                src={session.user.image}
-                                alt={session.user.name || 'User'}
+                                src={session?.user?.image || user?.image || '/default-avatar.svg'}
+                                alt={session?.user?.name || user?.name || 'User'}
                                 sx={{ width: 60, height: 60 }}
                             />
                         ) : (
@@ -187,24 +235,22 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                     <Box>
                         <Typography
                             sx={{
-                                // color: '#f5f5f5',
                                 color: '#111827',
                                 fontWeight: 600,
                                 fontSize: '16px',
                                 lineHeight: 1.2,
                             }}
                         >
-                            {session?.user?.name}
+                            {session?.user?.name || user?.name || 'User'}
                         </Typography>
                         <Typography
                             sx={{
-                                // color: '#fafafa',
                                 color: '#6b7280',
                                 fontSize: '12px',
                                 mt: 0.5,
                             }}
                         >
-                            {session?.user?.email}
+                            {session?.user?.email || user?.email || 'email@example.com'}
                         </Typography>
                     </Box>
                 </Box>
@@ -215,7 +261,6 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
             <Box sx={{ p: 3, borderTop: '1px solid #e0e0e0' }}>
                 <Button
                     fullWidth
-                    // variant="contained"
                     variant="outlined"
                     onClick={handleSignOut}
                     sx={{
@@ -238,7 +283,6 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
         </Box>
     );
 
-
     return (
         <ThemeRegistry>
             <Box sx={{ display: 'flex' }}>
@@ -253,7 +297,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                         ml: {
                             md: desktopOpen ? `${drawerWidth}px` : 0,
                         },
-                        bgcolor: '#7E57C2   ',
+                        bgcolor: '#7E57C2',
                         color: '#fff',
                         boxShadow: 'none',
                         borderBottom: 'none',
@@ -282,7 +326,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                         >
                             <MenuIcon />
                         </IconButton>
-                        <Stack sx={{ flexGrow: 1, }} >
+                        <Stack sx={{ flexGrow: 1 }}>
                             <Box
                                 sx={{
                                     cursor: 'pointer',
@@ -401,7 +445,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                 }}
                             >
                                 <MenuItem
-                                    onClick={handleClose}
+                                    onClick={handleApproveNewUser}
                                     sx={{
                                         fontSize: '14px',
                                         py: 1.5,
@@ -413,7 +457,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                     <ListItemIcon sx={{ minWidth: 32 }}>
                                         <Person fontSize="small" sx={{ color: '#9e9e9e' }} />
                                     </ListItemIcon>
-                                    โปรไฟล์ส่วนตัว
+                                    อนุมัติผู้ใช้ใหม่
                                 </MenuItem>
                                 <Divider sx={{ my: 0.5 }} />
                                 <MenuItem
@@ -460,7 +504,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                             '& .MuiDrawer-paper': {
                                 boxSizing: 'border-box',
                                 width: drawerWidth,
-                                bgcolor: '#7E57C2   ',
+                                bgcolor: '#7E57C2',
                                 border: 'none',
                                 boxShadow: 'none',
                             },
@@ -477,7 +521,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                             '& .MuiDrawer-paper': {
                                 boxSizing: 'border-box',
                                 width: drawerWidth,
-                                bgcolor: '#7E57C2   ',
+                                bgcolor: '#7E57C2',
                                 borderRight: '1px solid #e0e0e0',
                                 boxShadow: 'none',
                                 position: 'fixed',
@@ -498,10 +542,9 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                     sx={{
                         flexGrow: 1,
                         width: {
-                            // md: desktopOpen ? `calc(100% - ${drawerWidth}px)` : '100%'
                             ml: `${drawerWidth}px`,
                         },
-                        bgcolor: '#F8F5FB ',
+                        bgcolor: '#F8F5FB',
                         minHeight: '100vh',
                         transition: theme.transitions.create(['width', 'margin'], {
                             easing: theme.transitions.easing.sharp,
@@ -514,6 +557,12 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                         {children}
                     </Box>
                 </Box>
+
+                {/* Render the ApproveUserPopup */}
+                <ApproveUserPopup
+                    open={openApprovePopup}
+                    onClose={handleCloseApprovePopup}
+                />
             </Box>
         </ThemeRegistry>
     );

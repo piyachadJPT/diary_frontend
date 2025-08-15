@@ -108,20 +108,66 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
    const [editingDiaryId, setEditingDiaryId] = useState<number | null>(null);
    const [isDeletingFile, setIsDeletingFile] = useState<number | null>(null);
 
+   async function getProfileFromToken() {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+
+      try {
+         const res = await fetchWithBase('/api/profile', {
+            method: 'GET',
+            headers: {
+               'Authorization': `Bearer ${token}`,
+               'Content-Type': 'application/json'
+            }
+         });
+
+         if (!res.ok) {
+            localStorage.removeItem('token');
+            return null;
+         }
+
+         const data = await res.json();
+         return data;
+      } catch (error) {
+         console.error('Error fetching profile:', error);
+         localStorage.removeItem('token');
+         return null;
+      }
+   }
+
    useEffect(() => {
-      if (session) {
-         const fetchUser = async () => {
-            try {
-               const res = await fetchWithBase(`/api/user?email=${session.user?.email}`);
+      const fetchUser = async () => {
+         try {
+            const profile = await getProfileFromToken();
+            if (profile) {
+               setUserId(profile.id || profile.ID);
+               return;
+            }
+
+            // ถ้าไม่มีข้อมูลจาก token ให้ลองดึงจาก NextAuth session
+            if (status === 'authenticated' && session?.user?.email) {
+               const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
+               if (!res.ok) throw new Error('Failed to fetch user');
                const data = await res.json();
                setUserId(data.ID);
-            } catch (error) {
-               console.error('Error fetching user:', error);
+            } else if (status === 'unauthenticated') {
+               // ถ้าไม่มี NextAuth session และไม่มี token ให้ redirect ไปหน้า login
+               const token = localStorage.getItem('token');
+               if (!token) {
+                  window.location.href = '/';
+                  return;
+               }
             }
-         };
-         fetchUser();
-      }
-   }, [session]);
+         } catch (error) {
+            console.error('Error fetching user:', error);
+            setIsLoading(false);
+         }
+      };
+
+      fetchUser();
+   }, [session, status]);
+
+   console.log("userId in New Diary:", userId)
 
    useEffect(() => {
       if (editDiary) {

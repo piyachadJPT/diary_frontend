@@ -20,23 +20,83 @@ export default function Page() {
     const [error, setError] = useState<string | null>(null);
     const { data: session, status } = useSession();
 
+    // console.log("userId :", userId)
+
+    // useEffect(() => {
+    //     if (status === 'authenticated' && session?.user?.email) {
+    //         const fetchUser = async () => {
+    //             try {
+    //                 const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
+    //                 if (!res.ok) throw new Error('Failed to fetch user');
+    //                 const data = await res.json();
+    //                 setUserId(data.ID);
+    //             } catch (error) {
+    //                 console.error('Error fetching user:', error);
+    //                 setError('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+    //             } finally {
+    //                 setIsLoading(false);
+    //             }
+    //         };
+    //         fetchUser();
+    //     }
+    // }, [session, status]);
+
+    async function getProfileFromToken() {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+
+        try {
+            const res = await fetchWithBase('/api/profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!res.ok) {
+                localStorage.removeItem('token');
+                return null;
+            }
+
+            const data = await res.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            localStorage.removeItem('token');
+            return null;
+        }
+    }
+
     useEffect(() => {
-        if (status === 'authenticated' && session?.user?.email) {
-            const fetchUser = async () => {
-                try {
+        const fetchUser = async () => {
+            try {
+                const profile = await getProfileFromToken();
+                if (profile) {
+                    setUserId(profile.id || profile.ID);
+                    return;
+                }
+
+                if (status === 'authenticated' && session?.user?.email) {
                     const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
                     if (!res.ok) throw new Error('Failed to fetch user');
                     const data = await res.json();
                     setUserId(data.ID);
-                } catch (error) {
-                    console.error('Error fetching user:', error);
-                    setError('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
-                } finally {
-                    setIsLoading(false);
+                } else if (status === 'unauthenticated') {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = '/';
+                        return;
+                    }
                 }
-            };
-            fetchUser();
-        }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                setError('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+                setIsLoading(false);
+            }
+        };
+
+        fetchUser();
     }, [session, status]);
 
     return (

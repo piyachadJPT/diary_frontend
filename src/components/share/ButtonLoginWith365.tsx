@@ -2,7 +2,7 @@
 
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { Button } from '@mui/material'
 import Swal from 'sweetalert2'
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
@@ -13,20 +13,8 @@ export default function ButtonLoginWith365() {
     const [isLoading, setIsLoading] = useState(false)
     const hasProcessedLogin = useRef(false)
 
-    useEffect(() => {
-        if (
-            status === 'authenticated' &&
-            session?.user?.email &&
-            !isLoading &&
-            !hasProcessedLogin.current
-        ) {
-            hasProcessedLogin.current = true;
-            handleLogin(session.user.email);
-        }
-    }, [session?.user?.email, status, isLoading]);
-
-    const handleLogin = async (email: string) => {
-        setIsLoading(true)
+    const handleLogin = useCallback(async (email: string) => {
+        setIsLoading(true);
 
         const loginData = {
             email,
@@ -39,53 +27,64 @@ export default function ButtonLoginWith365() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(loginData),
-            })
+            });
 
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`)
+                throw new Error(`HTTP error! status: ${res.status}`);
             }
 
-            const data = await res.json()
+            const data = await res.json();
 
             if (!data.role) {
-                throw new Error('No role returned from API')
+                throw new Error('No role returned from API');
             }
+
+            localStorage.setItem('token', data.token);
 
             await Swal.fire({
                 icon: 'success',
                 text: 'ยินดีต้อนรับกลับ!',
                 showConfirmButton: false,
                 timer: 1500,
-            })
+            });
 
-            const now = new Date()
-            const year = now.getFullYear()
-            const month = String(now.getMonth() + 1).padStart(2, '0')
-            const day = String(now.getDate()).padStart(2, '0')
-            const dateString = `${year}-${month}-${day}`
+            const now = new Date();
+            const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-            const userRole = data.role.toLowerCase()
+            const userRole = data.role.toLowerCase();
 
             if (userRole === 'student') {
-                router.push(`/diary/${dateString}`)
+                router.push(`/diary/${dateString}`);
             } else if (userRole === 'advisor') {
-                router.push('/teacher')
+                router.push('/teacher');
             } else {
-                throw new Error(`Unknown role: ${data.role}`)
+                throw new Error(`Unknown role: ${data.role}`);
             }
 
         } catch (error) {
-            console.error('Login API Error:', error)
+            console.error('Login API Error:', error);
             await Swal.fire({
                 icon: 'error',
                 text: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ!',
                 showConfirmButton: false,
                 timer: 1500,
-            })
+            });
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    }, [session?.user?.name, session?.user?.image, router]);
+
+    useEffect(() => {
+        if (
+            status === 'authenticated' &&
+            session?.user?.email &&
+            !isLoading &&
+            !hasProcessedLogin.current
+        ) {
+            hasProcessedLogin.current = true;
+            handleLogin(session.user.email);
+        }
+    }, [session?.user?.email, status, isLoading, handleLogin]);
 
     const handleSignIn = () => {
         if (isLoading) return

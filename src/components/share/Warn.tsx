@@ -129,36 +129,36 @@ const Warn = ({ advisorId }: AdvisorProps) => {
         closeSSE();
         try {
             setConnectionStatus('connecting');
-            console.log(`Attempting SSE connection for advisor ${advisorId}`);
+            // console.log(`Attempting SSE connection for advisor ${advisorId}`);
             const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL
             const sseUrl = `${baseURL}/api/notification/stream?advisor_id=${advisorId}`;
-            console.log('SSE URL:', sseUrl);
+            // console.log('SSE URL:', sseUrl);
             eventSourceRef.current = new EventSource(sseUrl, {
                 withCredentials: true
             });
-            console.log('EventSource created, readyState:', eventSourceRef.current.readyState);
-            eventSourceRef.current.onopen = (event) => {
-                console.log('SSE connection opened:', event);
-                console.log('EventSource readyState:', eventSourceRef.current?.readyState);
+            // console.log('EventSource created, readyState:', eventSourceRef.current.readyState);
+            eventSourceRef.current.onopen = () => {
+                // console.log('SSE connection opened:', event);
+                // console.log('EventSource readyState:', eventSourceRef.current?.readyState);
                 setConnectionStatus('connected');
                 setError(null);
                 reconnectCountRef.current = 0;
             };
             eventSourceRef.current.onmessage = (event) => {
                 try {
-                    console.log('SSE message received:', event.data);
+                    // console.log('SSE message received:', event.data);
                     const data = JSON.parse(event.data);
                     if (data.type === 'connected') {
-                        console.log('SSE connection confirmed');
+                        // console.log('SSE connection confirmed');
                         return;
                     }
                     if (data.type === 'heartbeat') {
-                        console.log('Heartbeat received at', data.time);
+                        // console.log('Heartbeat received at', data.time);
                         return;
                     }
                     if (data.ID && data.Type) {
                         const newNotification: Notification = data;
-                        console.log('New notification received:', newNotification);
+                        // console.log('New notification received:', newNotification);
                         setNotifications(prev => {
                             const exists = prev.some(n => n.ID === newNotification.ID);
                             if (exists) return prev;
@@ -172,10 +172,10 @@ const Warn = ({ advisorId }: AdvisorProps) => {
                     console.error('Error parsing SSE message:', error);
                 }
             };
-            eventSourceRef.current.onerror = (event) => {
-                console.error('SSE error occurred:', event);
-                console.error('EventSource readyState:', eventSourceRef.current?.readyState);
-                console.error('EventSource URL:', eventSourceRef.current?.url);
+            eventSourceRef.current.onerror = () => {
+                // console.error('SSE error occurred:', event);
+                // console.error('EventSource readyState:', eventSourceRef.current?.readyState);
+                // console.error('EventSource URL:', eventSourceRef.current?.url);
                 setConnectionStatus('disconnected');
                 if (eventSourceRef.current) {
                     eventSourceRef.current.close();
@@ -183,7 +183,7 @@ const Warn = ({ advisorId }: AdvisorProps) => {
                 }
                 if (reconnectCountRef.current < maxReconnectAttempts) {
                     const delay = getReconnectDelay();
-                    console.log(`Attempting reconnection in ${delay}ms (attempt ${reconnectCountRef.current + 1}/${maxReconnectAttempts})`);
+                    // console.log(`Attempting reconnection in ${delay}ms (attempt ${reconnectCountRef.current + 1}/${maxReconnectAttempts})`);
                     reconnectTimeoutRef.current = setTimeout(() => {
                         reconnectCountRef.current++;
                         setupSSE();
@@ -253,7 +253,7 @@ const Warn = ({ advisorId }: AdvisorProps) => {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (!document.hidden && advisorId && connectionStatus === 'disconnected') {
-                console.log('Tab became visible, checking server and attempting reconnection');
+                // console.log('Tab became visible, checking server and attempting reconnection');
                 checkServerHealth().then(isHealthy => {
                     if (isHealthy) {
                         handleManualReconnect();
