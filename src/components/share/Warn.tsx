@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { Paper, Box, Typography, Avatar, Divider } from '@mui/material';
+import { Paper, Box, Typography, Avatar, Divider, Chip } from '@mui/material';
 import { fetchWithBase } from '@/app/unit/fetchWithUrl';
+import BookIcon from '@mui/icons-material/Book';
+import CommentIcon from '@mui/icons-material/Comment';
+import WarningIcon from '@mui/icons-material/Warning';
 
 export interface Student {
     ID: number;
@@ -280,11 +283,11 @@ const Warn = ({ advisorId }: AdvisorProps) => {
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'new_diary':
-                return '📝';
+                return <BookIcon />;
             case 'comment':
-                return '💬';
+                return <CommentIcon />;
             default:
-                return '🔔';
+                return <WarningIcon />;
         }
     };
 
@@ -473,6 +476,19 @@ const Warn = ({ advisorId }: AdvisorProps) => {
                                                 <Typography variant="subtitle2" fontWeight="bold">
                                                     {notification.Title}
                                                 </Typography>
+                                                <Chip
+                                                    label={
+                                                        notification.Type === 'new_diary'
+                                                            ? 'บันทึกใหม่'
+                                                            : notification.Type === 'comment'
+                                                                ? 'ความคิดเห็นใหม่'
+                                                                : notification.Type
+                                                    }
+                                                    size="small"
+                                                    color="primary"
+                                                    variant="outlined"
+                                                    sx={{ ml: 1 }}
+                                                />
                                             </Box>
                                             <Box sx={{ mb: 0.5 }}>
                                                 <Typography variant="body2" color="text.secondary">
