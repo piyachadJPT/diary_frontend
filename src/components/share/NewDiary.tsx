@@ -37,6 +37,7 @@ import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDiss
 import { useSession } from 'next-auth/react';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
 import Swal from 'sweetalert2';
+import { getUrlWithBase } from "@/app/unit/getUrlWithBase";
 
 interface Diary {
    StudentID: number
@@ -154,7 +155,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
                // ถ้าไม่มี NextAuth session และไม่มี token ให้ redirect ไปหน้า login
                const token = localStorage.getItem('token');
                if (!token) {
-                  window.location.href = '/';
+                  window.location.href = `${getUrlWithBase('/')}`
                   return;
                }
             }

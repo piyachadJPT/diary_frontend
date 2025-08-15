@@ -13,6 +13,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { fetchWithBase } from '@/app/unit/fetchWithUrl';
+import { withBasePath } from '@/app/unit/imageSrc';
 
 interface ApproveUserPopupProps {
     open: boolean;
@@ -31,7 +32,7 @@ const ApproveUserPopup: React.FC<ApproveUserPopupProps> = ({ open, onClose }) =>
     const [approve, setApprove] = useState<Approve[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const defaultAvatar = '/default-avatar.svg';
+    const defaultAvatar = `${withBasePath("/default-avatar.png")}`;
 
     const fetchApprove = async () => {
         setLoading(true);

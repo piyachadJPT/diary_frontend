@@ -17,6 +17,7 @@ import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import Swal from 'sweetalert2';
 import ViewDiaryDate from '@/components/share/ViewDiaryDate'
 import CloseIcon from '@mui/icons-material/Close'
+import { withBasePath } from '@/app/unit/imageSrc';
 
 interface StudentAdvisor {
    id: number;
@@ -310,7 +311,7 @@ const Student = ({ advisorId }: StudentProps) => {
                         borderBottom: "1px solid #eeeeee"
                      }}>
                         <Avatar
-                           src={item.student?.Image || '/default-avatar.svg'}
+                           src={item.student?.Image || `${withBasePath("/default-avatar.png")}`}
                            alt={item.student?.Name || ''}
                            sx={{ width: 40, height: 40, mr: 2 }}
                         />

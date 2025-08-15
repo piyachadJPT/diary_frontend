@@ -10,6 +10,7 @@ import Mood from '@/components/share/Mood'
 import Warn from '@/components/share/Warn';
 import { useSession } from 'next-auth/react';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
+import { getUrlWithBase } from '../unit/getUrlWithBase';
 
 
 export default function Page() {
@@ -85,7 +86,7 @@ export default function Page() {
                 } else if (status === 'unauthenticated') {
                     const token = localStorage.getItem('token');
                     if (!token) {
-                        window.location.href = '/';
+                        window.location.href = `${getUrlWithBase('/')}`
                         return;
                     }
                 }

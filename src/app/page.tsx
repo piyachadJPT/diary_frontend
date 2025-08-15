@@ -17,6 +17,7 @@ import {
     alpha,
     CircularProgress
 } from '@mui/material'
+import { withBasePath } from './unit/imageSrc'
 
 export default function Home() {
     const router = useRouter()
@@ -529,7 +530,8 @@ export default function Home() {
                                 >
                                     <Box
                                         component="img"
-                                        src="/dose.png"
+                                        // src="/dose.png"
+                                        src={withBasePath('/dose.png')}
                                         alt="login-image"
                                         sx={{
                                             maxWidth: '80%',

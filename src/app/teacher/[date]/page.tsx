@@ -29,6 +29,8 @@ import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import Comment from '@/components/share/Comment';
+import { getUrlWithBase } from "@/app/unit/getUrlWithBase";
+import { withBasePath } from "@/app/unit/imageSrc";
 
 interface DiaryEntry {
    ID: number;
@@ -209,7 +211,7 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
             } else if (status === 'unauthenticated') {
                const token = localStorage.getItem('token');
                if (!token) {
-                  window.location.href = '/';
+                  window.location.href = `${getUrlWithBase('/')}`
                   return;
                }
             }
@@ -329,7 +331,7 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
                               alignItems: 'center',
                            }}>
                               <Avatar
-                                 src={diary.Student?.Image || '/default-avatar.svg'}
+                                 src={diary.Student?.Image || `${withBasePath("/default-avatar.png")}`}
                                  alt={diary.Student?.Name || 'ไม่ระบุชื่อ'}
                                  sx={{ width: 55, height: 55, mr: 2 }}
                               />

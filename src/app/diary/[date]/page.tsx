@@ -36,6 +36,8 @@ import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDiss
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import Swal from 'sweetalert2';
 import Comment from '@/components/share/Comment'
+import { withBasePath } from "@/app/unit/imageSrc";
+import { getUrlWithBase } from "@/app/unit/getUrlWithBase";
 
 const NewDiary = dynamic(() => import('@/components/share/NewDiary'), {
    ssr: false,
@@ -191,7 +193,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
             } else if (status === 'unauthenticated') {
                const token = localStorage.getItem('token');
                if (!token) {
-                  window.location.href = '/';
+                  window.location.href = `${getUrlWithBase('/')}`
                   return;
                }
             }
@@ -397,18 +399,18 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                            alignItems: 'center',
                         }}>
                            {/* <Avatar
-                              src={diary.Student?.Image || '/default-avatar.svg'}
+                              src={diary.Student?.Image || `${withBasePath("/default-avatar.png")}`}
                               alt={diary.Student?.Name || 'Unknown User'}
                               sx={{ width: 55, height: 55, mr: 2 }}
                            >
                               <img
-                                 src='/default-avatar.svg'
+                                 src=`${withBasePath("/default-avatar.png")}`
                                  alt=""
                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
                            </Avatar> */}
                            <Avatar
-                              src={diary.Student?.Image || '/default-avatar.svg'}
+                              src={diary.Student?.Image || `${withBasePath("/default-avatar.png")}`}
                               alt={diary.Student?.Name || 'ไม่ระบุชื่อ'}
                               sx={{ width: 42, height: 42, mr: 2 }}
                            />

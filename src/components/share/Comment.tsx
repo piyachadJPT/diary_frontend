@@ -17,6 +17,7 @@ import {
 import {
    Delete,
 } from '@mui/icons-material';
+import { withBasePath } from '@/app/unit/imageSrc';
 
 interface CommentProps {
    diary_Id: number;
@@ -225,7 +226,7 @@ export default function Comment({ diary_Id, user_Id }: CommentProps) {
                      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                            <Avatar
-                              src={item.Author?.Image || '/default-avatar.svg'}
+                              src={item.Author?.Image || `${withBasePath("/default-avatar.png")}`}
                               alt={item.Author?.Name || 'ไม่ระบุชื่อ'}
                               sx={{ width: 42, height: 42, mr: 2 }}
                            />

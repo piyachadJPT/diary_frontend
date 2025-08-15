@@ -33,6 +33,7 @@ import {
 import Swal from 'sweetalert2';
 import ApproveUserPopup from '@/components/share/ApproveUserPopup';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl";
+import { withBasePath } from "@/app/unit/imageSrc";
 
 interface TeacherLayoutProps {
     children: ReactNode;
@@ -251,7 +252,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                     >
                         {session?.user?.image || user?.image ? (
                             <Avatar
-                                src={session?.user?.image || user?.image || '/default-avatar.svg'}
+                                src={session?.user?.image || user?.image || `${withBasePath("/default-avatar.png")}`}
                                 alt={session?.user?.name || user?.name || 'User'}
                                 sx={{ width: 60, height: 60 }}
                             />
