@@ -51,7 +51,7 @@ interface User {
 const drawerWidth = 280;
 
 const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate }) => {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
     const theme = useTheme();
@@ -108,6 +108,33 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
             return null;
         }
     }
+
+    useEffect(() => {
+        async function fetchProfile() {
+            // ตรวจสอบ NextAuth session ก่อน
+            if (status === 'authenticated' && session?.user?.email && !user) {
+                try {
+                    const res = await fetchWithBase(
+                        `/api/user?email=${encodeURIComponent(session.user.email)}`
+                    );
+                    if (!res.ok) throw new Error('Failed to fetch user');
+                    const data = await res.json();
+                    setUser(data);
+                } catch (error) {
+                    console.error('Error fetching user:', error);
+                }
+            }
+            // ถ้าไม่มี NextAuth session หรือ unauthenticated ให้ตรวจสอบ localStorage token
+            else if (status === 'unauthenticated' || !session) {
+                const profile = await getProfileFromToken();
+                if (profile) {
+                    setUser(profile);
+                }
+            }
+        }
+
+        fetchProfile();
+    }, [session, status, user]);
 
     const getInitialSelectedDate = () => {
         if (selectedDate) {
@@ -241,7 +268,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                 lineHeight: 1.2,
                             }}
                         >
-                            {session?.user?.name || user?.name || 'User'}
+                            {session?.user?.name || user?.name || session?.user?.email?.split('@')[0] || 'unknown'}
                         </Typography>
                         <Typography
                             sx={{
@@ -250,7 +277,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                 mt: 0.5,
                             }}
                         >
-                            {session?.user?.email || user?.email || 'email@example.com'}
+                            {session?.user?.email || user?.email || 'email@up.ac.th'}
                         </Typography>
                     </Box>
                 </Box>
@@ -382,7 +409,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                         fontSize: '16px',
                                     }}
                                 >
-                                    {session?.user?.name}
+                                    {session?.user?.name || user?.name || session?.user?.email?.split('@')[0] || 'unknown'}
                                 </Typography>
                                 <Typography
                                     variant="caption"
@@ -395,7 +422,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                         mt: -0.5,
                                     }}
                                 >
-                                    {session?.user?.email}
+                                    {session?.user?.email || user?.email || 'email@up.ac.th'}
                                 </Typography>
                             </Stack>
                             <IconButton

@@ -350,44 +350,44 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       }}>
          <Box sx={{ p: 1.5, borderBottom: '1px solid #f0f0f0' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton
-  size="large"
-  aria-label="account of current user"
-  aria-controls="menu-appbar"
-  aria-haspopup="true"
->
-  {session?.user?.image || user?.image ? (
-    <Avatar
-      src={session?.user?.image || user?.image || '/default-avatar.svg'}
-      alt={session?.user?.name || user?.name || 'User'}
-      sx={{ width: 60, height: 60 }}
-    />
-  ) : (
-    <AccountCircle sx={{ fontSize: '28px' }} />
-  )}
-</IconButton>
+               <IconButton
+                  size="large"
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+               >
+                  {session?.user?.image || user?.image ? (
+                     <Avatar
+                        src={session?.user?.image || user?.image || '/default-avatar.svg'}
+                        alt={session?.user?.name || user?.name || 'User'}
+                        sx={{ width: 60, height: 60 }}
+                     />
+                  ) : (
+                     <AccountCircle sx={{ fontSize: '28px' }} />
+                  )}
+               </IconButton>
 
-<Box>
-  <Typography
-    sx={{
-      color: '#111827',
-      fontWeight: 600,
-      fontSize: '16px',
-      lineHeight: 1.2
-    }}
-  >
-    {session?.user?.name || user?.name || 'User'}
-  </Typography>
-  <Typography
-    sx={{
-      color: '#6b7280',
-      fontSize: '12px',
-      mt: 0.5
-    }}
-  >
-    {session?.user?.email || user?.email || 'email@example.com'}
-  </Typography>
-</Box>
+               <Box>
+                  <Typography
+                     sx={{
+                        color: '#111827',
+                        fontWeight: 600,
+                        fontSize: '16px',
+                        lineHeight: 1.2
+                     }}
+                  >
+                     {session?.user?.name || user?.name || 'User'}
+                  </Typography>
+                  <Typography
+                     sx={{
+                        color: '#6b7280',
+                        fontSize: '12px',
+                        mt: 0.5
+                     }}
+                  >
+                     {session?.user?.email || user?.email || 'email@example.com'}
+                  </Typography>
+               </Box>
 
             </Box>
          </Box>
@@ -695,39 +695,39 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         sm: 'flex',
                      }, alignItems: 'center', gap: 1
                   }}>
-                    <Stack
-  sx={{
-    flexGrow: 1,
-    alignItems: 'flex-end',
-    ml: 'auto',
-  }}
->
-  <Typography
-    variant="h6"
-    noWrap
-    component="div"
-    sx={{
-      color: '#111827',
-      fontWeight: 700,
-      fontSize: '16px',
-    }}
-  >
-    {session?.user?.name || user?.name || 'User'}
-  </Typography>
-  <Typography
-    variant="caption"
-    noWrap
-    component="div"
-    sx={{
-      color: '#6b7280',
-      fontWeight: 400,
-      fontSize: '12px',
-      mt: -0.5,
-    }}
-  >
-    {session?.user?.email || user?.email || 'email@example.com'}
-  </Typography>
-</Stack>
+                     <Stack
+                        sx={{
+                           flexGrow: 1,
+                           alignItems: 'flex-end',
+                           ml: 'auto',
+                        }}
+                     >
+                        <Typography
+                           variant="h6"
+                           noWrap
+                           component="div"
+                           sx={{
+                              color: '#111827',
+                              fontWeight: 700,
+                              fontSize: '16px',
+                           }}
+                        >
+                           {session?.user?.name || user?.name || 'Unknown'}
+                        </Typography>
+                        <Typography
+                           variant="caption"
+                           noWrap
+                           component="div"
+                           sx={{
+                              color: '#6b7280',
+                              fontWeight: 400,
+                              fontSize: '12px',
+                              mt: -0.5,
+                           }}
+                        >
+                           {session?.user?.email || user?.email || 'email@up.ac.th'}
+                        </Typography>
+                     </Stack>
 
                      <IconButton
                         size="large"
@@ -743,14 +743,14 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         }}
                      >
                         {session?.user?.image || user?.image ? (
-  <Avatar
-    src={session?.user?.image || user?.image || '/default-avatar.svg'}
-    alt={session?.user?.name || user?.name || 'User'}
-    sx={{ width: 60, height: 60 }}
-  />
-) : (
-  <AccountCircle sx={{ fontSize: '28px' }} />
-)}
+                           <Avatar
+                              src={session?.user?.image || user?.image || '/default-avatar.svg'}
+                              alt={session?.user?.name || user?.name || 'User'}
+                              sx={{ width: 60, height: 60 }}
+                           />
+                        ) : (
+                           <AccountCircle sx={{ fontSize: '28px' }} />
+                        )}
 
                      </IconButton>
                      <Menu
