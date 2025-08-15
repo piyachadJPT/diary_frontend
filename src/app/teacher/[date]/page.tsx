@@ -330,7 +330,7 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
                            }}>
                               <Avatar
                                  src={diary.Student?.Image || '/default-avatar.svg'}
-                                 alt={diary.Student?.Name || 'Unknown User'}
+                                 alt={diary.Student?.Name || 'ไม่ระบุชื่อ'}
                                  sx={{ width: 55, height: 55, mr: 2 }}
                               />
                               <Box sx={{ flex: 1 }}>

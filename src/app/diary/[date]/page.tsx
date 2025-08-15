@@ -205,7 +205,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       fetchUser();
    }, [session, status]);
 
-   console.log("userId in Date page:",userId)
+   console.log("userId in Date page:", userId)
 
    const fetchDiaries = useCallback(async () => {
       if (!userId || !date) {
@@ -396,7 +396,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                            display: 'flex',
                            alignItems: 'center',
                         }}>
-                           <Avatar
+                           {/* <Avatar
                               src={diary.Student?.Image || '/default-avatar.svg'}
                               alt={diary.Student?.Name || 'Unknown User'}
                               sx={{ width: 55, height: 55, mr: 2 }}
@@ -406,7 +406,12 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                                  alt=""
                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
-                           </Avatar>
+                           </Avatar> */}
+                           <Avatar
+                              src={diary.Student?.Image || '/default-avatar.svg'}
+                              alt={diary.Student?.Name || 'ไม่ระบุชื่อ'}
+                              sx={{ width: 42, height: 42, mr: 2 }}
+                           />
                            <Box sx={{ flex: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                  <Box sx={{ display: 'flex', flexDirection: 'column', mr: 1 }}>
