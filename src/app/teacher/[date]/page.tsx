@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import {
    Language,
-   Group,
    AttachFile,
    Lock,
    School
@@ -119,7 +118,6 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
    const getShareText = (IsShared: string) => {
       switch (IsShared) {
          case 'everyone': return 'สาธารณะ';
-         case 'someone': return 'เจาะจง';
          case 'teacher': return 'อาจารย์เท่านั้น';
          case 'personal': return 'เฉพาะฉัน';
          default: return 'แชร์สาธารณะ';
@@ -129,7 +127,6 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
    const getShareIcon = (IsShared: string) => {
       switch (IsShared) {
          case 'everyone': return <Language fontSize="small" />;
-         case 'someone': return <Group fontSize="small" />;
          case 'teacher': return <School fontSize="small" />;
          case 'personal': return <Lock fontSize="small" />;
          default: return <Language fontSize="small" />;
@@ -143,29 +140,6 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
       }
       return null;
    };
-
-   // useEffect(() => {
-   //    if (status === 'authenticated' && session?.user?.email) {
-   //       const fetchUser = async () => {
-   //          try {
-   //             const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
-   //             if (!res.ok) {
-   //                throw new Error('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
-   //             }
-   //             const data = await res.json();
-   //             setUserId(data.ID);
-   //          } catch (error) {
-   //             console.error('Error fetching user:', error);
-   //             setError('ไม่สามารถดึงข้อมูลผู้ใช้ได้');
-   //             setIsLoading(false);
-   //          }
-   //       };
-   //       fetchUser();
-   //    } else if (status === 'unauthenticated') {
-   //       setError('กรุณาเข้าสู่ระบบ');
-   //       setIsLoading(false);
-   //    }
-   // }, [session, status]);
 
    async function getProfileFromToken() {
       const token = localStorage.getItem('token');
@@ -247,8 +221,10 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
          }
 
          const data = await res.json();
-         console.log('data :', data);
-         setDiaryData(Array.isArray(data.data) ? data.data : []);
+         const filteredData = Array.isArray(data.data)
+            ? data.data.filter((diary: DiaryEntry) => diary.IsShared === 'everyone' || diary.IsShared === 'teacher')
+            : [];
+         setDiaryData(filteredData);
       } catch (err) {
          console.error('Error fetching diary:', err);
          setError('ไม่สามารถดึงข้อมูล diary ได้');
@@ -443,7 +419,7 @@ const TeacherDiaryPage = ({ params }: TeacherDiaryPageProps) => {
                      }}
                   />
                   <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                     ไม่พบบันทึกสำหรับวันนี้
+                     นิสิตตั้งบันทึกเป็นส่วนตัว
                   </Typography>
                </Box>
             )}

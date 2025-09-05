@@ -4,7 +4,7 @@
 
 import ThemeRegistry from "../share/ThemeRegistry";
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import React, { ReactNode, useState, useEffect } from 'react';
 import {
     AppBar,
@@ -17,21 +17,20 @@ import {
     Avatar,
     Menu,
     MenuItem,
-    Divider,
     useTheme,
     useMediaQuery,
     Stack,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
-    Person,
     LogoutOutlined,
+    Person
 } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import ApproveUserPopup from '@/components/share/ApproveUserPopup';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl";
+import ApproveUserPopup from "../share/ApproveUserPopup";
 
-interface TeacherLayoutProps {
+interface AdminLayoutProps {
     children: ReactNode;
     selectedDate?: string;
 }
@@ -47,19 +46,17 @@ interface User {
 
 const drawerWidth = 280;
 
-const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const searchParams = useSearchParams();
     const theme = useTheme();
     const [user, setUser] = useState<User | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [role, setRole] = useState<string | null>(null);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [desktopOpen, setDesktopOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [currentDate, setCurrentDate] = useState(new Date());
     const [openApprovePopup, setOpenApprovePopup] = useState(false);
-    const [role, setRole] = useState<string | null>(null);
 
     async function getProfileFromToken() {
         const token = localStorage.getItem('token');
@@ -90,7 +87,6 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
 
     useEffect(() => {
         async function fetchProfile() {
-            // ตรวจสอบ NextAuth session ก่อน
             if (status === 'authenticated' && session?.user?.email && !user) {
                 try {
                     const res = await fetchWithBase(
@@ -100,12 +96,10 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                     const data = await res.json();
                     setUser(data);
                     setRole(data.Role)
-
                 } catch (error) {
                     console.error('Error fetching user:', error);
                 }
             }
-            // ถ้าไม่มี NextAuth session หรือ unauthenticated ให้ตรวจสอบ localStorage token
             else if (status === 'unauthenticated' || !session) {
                 const profile = await getProfileFromToken();
                 if (profile) {
@@ -118,72 +112,21 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
         fetchProfile();
     }, [session, status, user]);
 
-    const getInitialSelectedDate = () => {
-        if (selectedDate) {
-            const parsedDate = new Date(selectedDate);
-            if (!isNaN(parsedDate.getTime())) {
-                return parsedDate;
-            }
-        }
-
-        const dateParam = searchParams.get('date');
-        if (dateParam) {
-            const parsedDate = new Date(dateParam);
-            if (!isNaN(parsedDate.getTime())) {
-                return parsedDate;
-            }
-        }
-        return new Date();
-    };
-
-    const [selectedDateState, setSelectedDateState] = useState<Date>(getInitialSelectedDate());
-    const [selectedYear, setSelectedYear] = useState(() => {
-        const initial = getInitialSelectedDate();
-        return initial.getFullYear();
-    });
-
-    useEffect(() => {
-        if (selectedDate) {
-            const parsedDate = new Date(selectedDate);
-            if (!isNaN(parsedDate.getTime())) {
-                setSelectedDateState(parsedDate);
-                setCurrentDate(parsedDate);
-                setSelectedYear(parsedDate.getFullYear());
-            }
-        }
-    }, [selectedDate]);
-
-    useEffect(() => {
-        const dateParam = searchParams.get('date');
-        if (dateParam) {
-            const parsedDate = new Date(dateParam);
-            if (!isNaN(parsedDate.getTime())) {
-                setSelectedDateState(parsedDate);
-                setCurrentDate(parsedDate);
-                setSelectedYear(parsedDate.getFullYear());
-            }
-        } else if (!selectedDate) {
-            const today = new Date();
-            setSelectedDateState(today);
-            setCurrentDate(today);
-            setSelectedYear(today.getFullYear());
-        }
-    }, [searchParams, selectedDate]);
-
-    const handleDrawerToggle = () => {
-        if (isMobile) {
-            setMobileOpen(!mobileOpen);
-        } else {
-            setDesktopOpen(!desktopOpen);
-        }
-    };
-
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
     };
 
     const handleClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleApproveNewUser = () => {
+        handleClose();
+        setOpenApprovePopup(true);
+    };
+
+    const handleCloseApprovePopup = () => {
+        setOpenApprovePopup(false);
     };
 
     const handleSignOut = async () => {
@@ -200,21 +143,12 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
         });
     };
 
-    const handleApproveNewUser = () => {
-        handleClose();
-        setOpenApprovePopup(true);
-    };
-
-    const handleCloseApprovePopup = () => {
-        setOpenApprovePopup(false);
-    };
-
     const handleToHome = () => {
-        router.push('/teacher')
+        router.push('/admin')
     }
 
     useEffect(() => {
-        if (role && role !== 'advisor') {
+        if (role && role !== 'admin') {
             sessionStorage.clear()
             signOut({
                 callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
@@ -236,7 +170,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                         ml: {
                             md: desktopOpen ? `${drawerWidth}px` : 0,
                         },
-                        bgcolor: '#7E57C2',
+                        bgcolor: '#607d8b',
                         color: '#fff',
                         boxShadow: 'none',
                         borderBottom: 'none',
@@ -331,7 +265,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                 sx={{
                                     color: '#fff',
                                     '&:hover': {
-                                        bgcolor: '#9575cd',
+                                        bgcolor: '#607d8b',
                                     },
                                 }}
                             >
@@ -381,7 +315,6 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                     </ListItemIcon>
                                     อนุมัติผู้ใช้ใหม่
                                 </MenuItem>
-                                <Divider sx={{ my: 0.5 }} />
                                 <MenuItem
                                     onClick={handleSignOut}
                                     sx={{
@@ -423,14 +356,13 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                         {children}
                     </Box>
                 </Box>
-
-                <ApproveUserPopup
-                    open={openApprovePopup}
-                    onClose={handleCloseApprovePopup}
-                />
             </Box>
+            <ApproveUserPopup
+                open={openApprovePopup}
+                onClose={handleCloseApprovePopup}
+            />
         </ThemeRegistry>
     );
 };
 
-export default TeacherLayout;
+export default AdminLayout;

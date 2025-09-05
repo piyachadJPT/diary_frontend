@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 
 interface ViewDiaryDateProps {
    studentId: number | null;
+   userId: number | null;
 }
 
 export interface DiaryDateResponse {
@@ -21,11 +22,10 @@ export interface DiaryDateResponse {
    data: string[];
 }
 
-const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
+const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId, userId }) => {
    const today = new Date();
    const router = useRouter();
    const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-   // const [selectedDate, setSelectedDate] = useState(today);
    // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const [isLoading, setIsLoading] = useState<boolean>(true);
    // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -172,7 +172,12 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
    }
 
    const handleToDate = (id: string, date: string) => {
-      router.push(`/teacher/${date}`);
+      if (userId) {
+         router.push(`/diary/view/${date}`);
+
+      } else {
+         router.push(`/teacher/${date}`);
+      }
       sessionStorage.setItem('studentId', id);
    }
 
@@ -180,13 +185,13 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
       <Paper
          elevation={0}
          sx={{
-            mt: 0.5,
             width: '100%',
-            height: '70vh',
+            height: '65vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: '#ffffff',
+            p: 2
          }}
       >
          <Box sx={{ width: '100%', maxWidth: 420, px: 3 }}>
@@ -195,8 +200,6 @@ const ViewDiaryDate: React.FC<ViewDiaryDateProps> = ({ studentId }) => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  mb: 3,
-                  pt: 2,
                }}
             >
                <Typography

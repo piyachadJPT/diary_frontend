@@ -1,4 +1,4 @@
 export const getUrlWithBase = (url: string) => {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+    const base = process.env.NEXT_PUBLIC_URL || "";
     return `${base}${url}`;
 };

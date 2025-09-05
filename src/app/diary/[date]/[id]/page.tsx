@@ -48,13 +48,13 @@ export default function Page() {
                     if (pdfAttachment) {
                         const cleanFileURL = pdfAttachment.FileURL.replace(/\\/g, "/");
                         const fileName = cleanFileURL.split("upload/diary/")[1];
+                        if (!fileName) {
+                            setError("ไฟล์แนบไม่ถูกต้อง");
+                            return;
+                        }
                         const fullUrl = getUrlWithBase(`/api/files/${fileName}`);
                         setPdfUrl(fullUrl);
-                    } else {
-                        setError("ไม่พบไฟล์แนบ PDF");
                     }
-                } else {
-                    setError("ไม่พบไฟล์แนบสำหรับไดอารี่นี้");
                 }
 
             } catch (error) {

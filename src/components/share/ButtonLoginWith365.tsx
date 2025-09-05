@@ -96,7 +96,6 @@ export default function ButtonLoginWith365() {
             onClick={handleSignIn}
             variant="contained"
             size="large"
-            // startIcon={<Microsoft />}
             disabled={isLoading || status === 'loading'}
             sx={{
                 width: '100%',

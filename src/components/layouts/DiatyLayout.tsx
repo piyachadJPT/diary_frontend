@@ -30,14 +30,13 @@ import {
    Menu as MenuIcon,
    Visibility as VisibilityIcon,
    LogoutOutlined,
-   AccountCircle,
    ChevronLeft,
    ChevronRight,
 } from '@mui/icons-material';
 import Swal from 'sweetalert2';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl";
-import { withBasePath } from "@/app/unit/imageSrc";
 import { getUrlWithBase } from "@/app/unit/getUrlWithBase";
+import ViewAllStudent from "@/components/share/ViewAllStudent";
 
 interface DiatyLayoutProps {
    children: ReactNode;
@@ -69,30 +68,12 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const [user, setUser] = useState<User | null>(null);
    const [diaryDate, setDiaryDate] = useState<DiaryDateResponse | null>(null);
    const [userId, setUserId] = useState<number | null>(null);
+   const [role, setRole] = useState<string | null>(null);
    const [mobileOpen, setMobileOpen] = useState(false);
    const [desktopOpen, setDesktopOpen] = useState(true);
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
    const [currentDate, setCurrentDate] = useState(new Date());
-
-   // ลบคอมเมนต์ออกถ้าต้องการให้ทำงาน
-   // useEffect(() => {
-   //    if (status === 'unauthenticated') {
-   //       const doSignOut = async () => {
-   //          await Swal.fire({
-   //             icon: "success",
-   //             text: `กรุณาล็อคอินก่อนเข้าสู่ระบบ`,
-   //             showConfirmButton: false,
-   //             timer: 1000,
-   //          });
-   //          sessionStorage.clear()
-   //          await signOut({
-   //             callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
-   //          });
-   //       };
-
-   //       doSignOut();
-   //    }
-   // }, [status]);
+   const [open, setOpen] = useState(false);
 
    async function getProfileFromToken() {
       const token = localStorage.getItem('token');
@@ -123,7 +104,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
 
    useEffect(() => {
       async function fetchProfile() {
-         // ตรวจสอบ NextAuth session ก่อน
          if (status === 'authenticated' && session?.user?.email && !user) {
             try {
                const res = await fetchWithBase(
@@ -133,22 +113,24 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                const data = await res.json();
                setUser(data);
                setUserId(data.id || data.ID);
+               setRole(data.Role)
             } catch (error) {
                console.error('Error fetching user:', error);
             }
          }
-         // ถ้าไม่มี NextAuth session หรือ unauthenticated ให้ตรวจสอบ localStorage token
          else if (status === 'unauthenticated' || !session) {
             const profile = await getProfileFromToken();
+            console.log(profile);
             if (profile) {
                setUser(profile);
                setUserId(profile.id || profile.ID);
+               setRole(profile.Role || profile.role)
             }
          }
       }
 
       fetchProfile();
-   }, [session, status, user]);
+   }, [session, status]);
 
    const fetchDiaryByDate = useCallback(async () => {
       if (userId) {
@@ -237,7 +219,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       setAnchorEl(null);
    };
 
-   // แก้ไข handleSignOut
    const handleSignOut = async () => {
       handleClose();
       setDesktopOpen(!desktopOpen);
@@ -249,17 +230,14 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
          timer: 1500,
       });
 
-      // ล้าง localStorage และ sessionStorage
       localStorage.clear();
       sessionStorage.clear();
 
-      // ถ้ามี NextAuth session ให้ sign out
       if (session) {
          await signOut({
             callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
          });
       } else {
-         // ถ้าไม่มี NextAuth session ให้ redirect ไปหน้าแรก
          window.location.href = `${getUrlWithBase('/')}`
 
       }
@@ -294,7 +272,25 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       });
    };
 
+   const isDateClickable = (day: number) => {
+      const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      targetDate.setHours(0, 0, 0, 0);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      return hasDiaryData(day) ||
+         targetDate.getTime() === today.getTime() ||
+         targetDate.getTime() === yesterday.getTime();
+   };
+
    const selectDate = (day: number) => {
+      if (!isDateClickable(day)) {
+         return;
+      }
+
       const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       setSelectedDateState(newDate);
 
@@ -315,6 +311,18 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       );
    };
 
+   const isYesterday = (day: number) => {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      return (
+         yesterday.getDate() === day &&
+         yesterday.getMonth() === currentDate.getMonth() &&
+         yesterday.getFullYear() === currentDate.getFullYear()
+      );
+   };
+
    const isSelectedDay = (day: number) => {
       return (
          selectedDateState.getDate() === day &&
@@ -331,17 +339,42 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
       const dayStr = String(day).padStart(2, '0');
       const targetDate = `${year}-${month}-${dayStr}`;
 
-      return diaryDate.data.some(dateString => {
-         const date = new Date(dateString);
-         const dateOnly = date.toISOString().split('T')[0];
-         return dateOnly === targetDate;
+      const hasData = diaryDate.data.some(dateString => {
+         try {
+            const date = new Date(dateString);
+
+            if (isNaN(date.getTime())) return false;
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateOnly = `${year}-${month}-${day}`;
+
+            return dateOnly === targetDate;
+         } catch (error) {
+            console.error('Error parsing date:', dateString, error);
+            return false;
+         }
       });
+
+      return hasData;
    };
 
    const months = [
       'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
       'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
    ];
+
+   console.log("role =", role);
+
+   useEffect(() => {
+      if (role && role !== 'student') {
+         sessionStorage.clear()
+         signOut({
+            callbackUrl: `${process.env.NEXT_PUBLIC_BASE_PATH}/`,
+         });
+      }
+   }, [role]);
 
    const drawer = (
       <Box sx={{
@@ -359,15 +392,14 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                   aria-controls="menu-appbar"
                   aria-haspopup="true"
                >
-                  {session?.user?.image || user?.image ? (
-                     <Avatar
-                        src={session?.user?.image || user?.image || `${withBasePath("/default-avatar.png")}`}
-                        alt={session?.user?.name || user?.name || 'User'}
-                        sx={{ width: 60, height: 60 }}
-                     />
-                  ) : (
-                     <AccountCircle sx={{ fontSize: '28px' }} />
-                  )}
+                  <Avatar
+                     src={session?.user?.image || user?.image || undefined}
+                     alt={session?.user?.name || user?.name || "User"}
+                     sx={{ width: 50, height: 50 }}
+                  >
+                     {(session?.user?.name || user?.name || "U").charAt(0)}
+                  </Avatar>
+
                </IconButton>
 
                <Box>
@@ -505,23 +537,6 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
 
                      {isSelectedMonth && (
                         <Box sx={{ px: 3, pb: 2 }}>
-                           <Box sx={{ fontSize: '12px', color: '#6b7280', mb: 1 }}>
-                              <Grid container spacing={0}>
-                                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                                    // @ts-ignore
-                                    <Grid item xs key={`weekday-${index}`} sx={{
-                                       display: 'flex',
-                                       justifyContent: 'center',
-                                       py: 0.5
-                                    }}>
-                                       <Typography sx={{ fontSize: '10px', color: '#9ca3af' }}>
-                                          {day}
-                                       </Typography>
-                                    </Grid>
-                                 ))}
-                              </Grid>
-                           </Box>
-
                            <Grid container spacing={0}>
                               {Array.from({ length: getFirstDayOfMonth(currentDate) }, (_, i) => (
                                  // @ts-ignore
@@ -537,8 +552,30 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                               {Array.from({ length: getDaysInMonth(currentDate) }, (_, i) => {
                                  const day = i + 1;
                                  const actualToday = isActualToday(day);
+                                 const yesterdayCheck = isYesterday(day);
                                  const selected = isSelectedDay(day);
                                  const hasData = hasDiaryData(day);
+                                 const clickable = isDateClickable(day);
+
+                                 let backgroundColor, color, fontWeight;
+
+                                 if (hasData) {
+                                    backgroundColor = '#388e3c';
+                                    color = 'white';
+                                    fontWeight = 600;
+                                 } else if (yesterdayCheck) {
+                                    backgroundColor = '#fdd835';
+                                    color = '#333';
+                                    fontWeight = 600;
+                                 } else if (clickable) {
+                                    backgroundColor = 'transparent';
+                                    color = '#374151';
+                                    fontWeight = 400;
+                                 } else {
+                                    backgroundColor = 'transparent';
+                                    color: '#d1d5db';
+                                    fontWeight = 300;
+                                 }
 
                                  return (
                                     // @ts-ignore
@@ -549,37 +586,27 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                                     }}>
                                        <Button
                                           onClick={() => selectDate(day)}
+                                          disabled={!clickable}
                                           sx={{
                                              width: 20,
                                              height: 20,
                                              minWidth: 20,
                                              borderRadius: '50%',
                                              fontSize: '10px',
-                                             fontWeight: selected ? 600 : hasData ? 600 : 400,
-                                             color: selected
-                                                ? 'white'
-                                                : hasData
-                                                   ? 'white'
-                                                   : '#9ca3af',
-                                             bgcolor: selected
-                                                ? '#5b21b6'
-                                                : hasData
-                                                   ? '#7e57c2'
-                                                   : 'transparent',
-                                             '&:hover': {
-                                                bgcolor: selected
-                                                   ? '#4c1d95'
-                                                   : hasData
-                                                      ? '#6d28d9'
-                                                      : '#f3f4f6',
-                                                transform: 'scale(1.1)',
+                                             fontWeight,
+                                             color,
+                                             bgcolor: backgroundColor,
+                                             cursor: clickable ? 'pointer' : 'default',
+                                             '&.Mui-disabled': {
+                                                color: '#d1d5db',
+                                                cursor: 'default',
                                              },
                                              border: 'none',
                                              p: 0,
                                              transition: 'all 0.2s ease-in-out',
-                                             boxShadow: hasData || selected
-                                                ? '0 2px 8px rgba(126, 87, 194, 0.3)'
-                                                : 'none',
+                                             '&:hover': {
+                                                bgcolor: clickable && !hasData && !yesterdayCheck ? '#f3f4f6' : backgroundColor,
+                                             },
                                           }}
                                        >
                                           {day}
@@ -675,7 +702,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                            fontSize: '16px',
                         }}
                      >
-                        Project Progress Diary
+                        Project Progress Follow Up
                      </Typography>
                      <Typography
                         variant="caption"
@@ -745,16 +772,13 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                            },
                         }}
                      >
-                        {session?.user?.image || user?.image ? (
-                           <Avatar
-                              src={session?.user?.image || user?.image || `${withBasePath("/default-avatar.png")}`}
-                              alt={session?.user?.name || user?.name || 'User'}
-                              sx={{ width: 60, height: 60 }}
-                           />
-                        ) : (
-                           <AccountCircle sx={{ fontSize: '28px' }} />
-                        )}
-
+                        <Avatar
+                           src={session?.user?.image || user?.image || undefined}
+                           alt={session?.user?.name || user?.name || "User"}
+                           sx={{ width: 50, height: 50 }}
+                        >
+                           {(session?.user?.name || user?.name || "U").charAt(0)}
+                        </Avatar>
                      </IconButton>
                      <Menu
                         id="menu-appbar"
@@ -780,7 +804,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         }}
                      >
                         <MenuItem
-                           onClick={handleClose}
+                           onClick={() => setOpen(true)}
                            sx={{
                               fontSize: '14px',
                               py: 1.5,
@@ -892,6 +916,11 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                   {children}
                </Box>
             </Box>
+            <ViewAllStudent
+               userId={userId}
+               open={open}
+               onClose={() => setOpen(false)}
+            />
          </Box>
       </ThemeRegistry>
    );

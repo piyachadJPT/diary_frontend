@@ -86,14 +86,16 @@ export default function Home() {
                         router.push(`/diary/${dateString}`);
                     } else if (userRole === 'advisor') {
                         router.push('/teacher');
+                    } else if (userRole === 'admin') {
+                        router.push('/admin');
                     } else {
-                        throw new Error(`Unknown role: ${data.role}`);
+                        return
                     }
                 });
             } else {
                 let errorMessage = 'ไม่สามารถเข้าสู่ระบบได้';
 
-                if (data.error === 'บัญชีของคุณยังไม่ได้รับการอนุมัติ') {
+                if (data.error === 'Your account has not been approved yet') {
                     errorMessage = 'บัญชีของคุณยังไม่ได้รับการอนุมัติ';
                 } else if (data.error === 'Incorrect password') {
                     errorMessage = 'รหัสผ่านไม่ถูกต้อง';
@@ -225,14 +227,6 @@ export default function Home() {
         setPassword('')
         setConfirmPassword('')
     }
-
-    // const handleSwitchToLogin = () => {
-    //     setShowRegister(false)
-    //     setName('')
-    //     setEmail('')
-    //     setPassword('')
-    //     setConfirmPassword('')
-    // }
 
     const handleBackToMain = () => {
         setShowEmailLogin(false)
@@ -429,20 +423,31 @@ export default function Home() {
                                                     variant="contained"
                                                     disabled={loading}
                                                     sx={{
-                                                        bgcolor: '#673ab7',
-                                                        color: 'white',
+                                                        width: '100%',
                                                         py: 1.5,
-                                                        borderRadius: 2,
+                                                        px: 4,
+                                                        borderRadius: 3,
+                                                        textTransform: 'none',
                                                         fontSize: '1rem',
                                                         fontWeight: 500,
-                                                        textTransform: 'none',
-                                                        mb: 2,
-                                                        position: 'relative',
+                                                        background: '#673ab7',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        boxShadow: '0 8px 32px rgba(156, 39, 176, 0.3)',
+                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         '&:hover': {
-                                                            bgcolor: '#6d28d9'
+                                                            background: '#5e35b1',
+                                                            boxShadow: '0 12px 40px rgba(156, 39, 176, 0.4)',
+                                                            transform: 'translateY(-2px)'
+                                                        },
+                                                        '&:active': {
+                                                            transform: 'translateY(0px)',
+                                                            boxShadow: '0 6px 24px rgba(156, 39, 176, 0.3)'
                                                         },
                                                         '&:disabled': {
-                                                            bgcolor: 'rgba(124, 58, 237, 0.6)'
+                                                            background: '#cccccc',
+                                                            color: '#666666',
+                                                            boxShadow: 'none'
                                                         }
                                                     }}
                                                 >
@@ -464,17 +469,32 @@ export default function Home() {
                                                     onClick={handleSwitchToRegister}
                                                     disabled={loading}
                                                     sx={{
-                                                        borderColor: '#673ab7',
-                                                        color: '#673ab7',
+                                                        width: '100%',
                                                         py: 1.5,
-                                                        borderRadius: 2,
+                                                        px: 4,
+                                                        my: 1.5,
+                                                        borderRadius: 3,
+                                                        textTransform: 'none',
                                                         fontSize: '1rem',
                                                         fontWeight: 500,
-                                                        textTransform: 'none',
-                                                        mb: 3,
+                                                        background: '#673ab7',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        boxShadow: '0 8px 32px rgba(156, 39, 176, 0.3)',
+                                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         '&:hover': {
-                                                            borderColor: '#6d28d9',
-                                                            backgroundColor: 'rgba(124, 58, 237, 0.04)'
+                                                            background: '#5e35b1',
+                                                            boxShadow: '0 12px 40px rgba(156, 39, 176, 0.4)',
+                                                            transform: 'translateY(-2px)'
+                                                        },
+                                                        '&:active': {
+                                                            transform: 'translateY(0px)',
+                                                            boxShadow: '0 6px 24px rgba(156, 39, 176, 0.3)'
+                                                        },
+                                                        '&:disabled': {
+                                                            background: '#cccccc',
+                                                            color: '#666666',
+                                                            boxShadow: 'none'
                                                         }
                                                     }}
                                                 >
@@ -530,7 +550,6 @@ export default function Home() {
                                 >
                                     <Box
                                         component="img"
-                                        // src="/dose.png"
                                         src={withBasePath('/dose.png')}
                                         alt="login-image"
                                         sx={{

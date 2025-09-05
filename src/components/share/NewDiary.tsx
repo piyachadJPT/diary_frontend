@@ -15,18 +15,19 @@ import {
    ListItemText,
    Fab,
    Chip,
-   LinearProgress
+   LinearProgress,
+   Alert
 } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PublicIcon from '@mui/icons-material/Public';
-import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import LockIcon from '@mui/icons-material/Lock';
 import LanguageIcon from '@mui/icons-material/Language';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DeleteIcon from '@mui/icons-material/Delete';
+import WarningIcon from '@mui/icons-material/Warning';
 import 'react-quill/dist/quill.snow.css'
 import QuillEditor from '../share/QuillEditor'
 import SentimentVerySatisfiedIcon from '@mui/icons-material/SentimentVerySatisfied';
@@ -34,10 +35,8 @@ import SentimentSatisfiedAltIcon from '@mui/icons-material/SentimentSatisfiedAlt
 import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
-import { useSession } from 'next-auth/react';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl"
 import Swal from 'sweetalert2';
-import { getUrlWithBase } from "@/app/unit/getUrlWithBase";
 
 interface Diary {
    StudentID: number
@@ -89,18 +88,17 @@ interface NewDiaryProps {
    editDiary?: DiaryWithDetails | null;
    onEditComplete?: () => void;
    params?: { date: string };
+   userId: number | null;
 }
 
-export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, params }: NewDiaryProps) {
+export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, params, userId }: NewDiaryProps) {
    const date = params?.date;
-   const { data: session } = useSession();
    const [open, setOpen] = useState(false);
    const [status, setStatus] = useState('veryHappy');
    const [shareAnchor, setShareAnchor] = React.useState<HTMLElement | null>(null);
    const [shareOption, setShareOption] = useState('everyone');
    const [content, setContent] = useState('');
    const [contentDelta, setContentDelta] = useState('');
-   const [userId, setUserId] = useState<number | null>(null);
    const [isLoading, setIsLoading] = useState(false);
    const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([]);
    const [existingAttachments, setExistingAttachments] = useState<ExistingAttachment[]>([]);
@@ -108,67 +106,57 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
    const [isEditMode, setIsEditMode] = useState(false);
    const [editingDiaryId, setEditingDiaryId] = useState<number | null>(null);
    const [isDeletingFile, setIsDeletingFile] = useState<number | null>(null);
+   const [backdateError, setBackdateError] = useState<string | null>(null);
 
-   async function getProfileFromToken() {
-      const token = localStorage.getItem('token');
-      if (!token) return null;
-
+   const validateBackdateLimit = (dateString: string): { isValid: boolean; errorMessage?: string } => {
       try {
-         const res = await fetchWithBase('/api/profile', {
-            method: 'GET',
-            headers: {
-               'Authorization': `Bearer ${token}`,
-               'Content-Type': 'application/json'
-            }
-         });
+         const selectedDate = new Date(dateString);
+         const today = new Date();
 
-         if (!res.ok) {
-            localStorage.removeItem('token');
-            return null;
+         selectedDate.setHours(0, 0, 0, 0);
+         today.setHours(0, 0, 0, 0);
+
+         const timeDiff = today.getTime() - selectedDate.getTime();
+         const dayDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+         if (dayDiff > 1) {
+            return {
+               isValid: false,
+               errorMessage: `ไม่สามารถบันทึกย้อนหลังได้เกิน 1 วัน (เลือกวันที่: ${selectedDate.toLocaleDateString('th-TH')} เกิน ${dayDiff} วัน)`
+            };
          }
 
-         const data = await res.json();
-         return data;
+         if (dayDiff < 0) {
+            return {
+               isValid: false,
+               errorMessage: `ไม่สามารถบันทึกวันที่ในอนาคตได้`
+            };
+         }
+
+         return { isValid: true };
       } catch (error) {
-         console.error('Error fetching profile:', error);
-         localStorage.removeItem('token');
-         return null;
+         console.log(error)
+         return {
+            isValid: false,
+            errorMessage: 'รูปแบบวันที่ไม่ถูกต้อง'
+         };
       }
-   }
+   };
 
    useEffect(() => {
-      const fetchUser = async () => {
-         try {
-            const profile = await getProfileFromToken();
-            if (profile) {
-               setUserId(profile.id || profile.ID);
-               return;
-            }
-
-            // ถ้าไม่มีข้อมูลจาก token ให้ลองดึงจาก NextAuth session
-            if (status === 'authenticated' && session?.user?.email) {
-               const res = await fetchWithBase(`/api/user?email=${encodeURIComponent(session?.user?.email || '')}`);
-               if (!res.ok) throw new Error('Failed to fetch user');
-               const data = await res.json();
-               setUserId(data.ID);
-            } else if (status === 'unauthenticated') {
-               // ถ้าไม่มี NextAuth session และไม่มี token ให้ redirect ไปหน้า login
-               const token = localStorage.getItem('token');
-               if (!token) {
-                  window.location.href = `${getUrlWithBase('/')}`
-                  return;
-               }
-            }
-         } catch (error) {
-            console.error('Error fetching user:', error);
-            setIsLoading(false);
+      if (date && !isEditMode) {
+         const validation = validateBackdateLimit(date);
+         if (!validation.isValid) {
+            setBackdateError(validation.errorMessage || 'วันที่ไม่ถูกต้อง');
+         } else {
+            setBackdateError(null);
          }
-      };
+      } else {
+         setBackdateError(null);
+      }
+   }, [date, isEditMode]);
 
-      fetchUser();
-   }, [session, status]);
-
-   console.log("userId in New Diary:", userId)
+   console.log("userId in Date page:", userId)
 
    useEffect(() => {
       if (editDiary) {
@@ -232,7 +220,6 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
    const getShareText = () => {
       switch (shareOption) {
          case 'everyone': return 'สาธารณะ';
-         case 'someone': return 'เจาะจง';
          case 'teacher': return 'อาจารย์เท่านั้น';
          case 'personal': return 'เฉพาะฉัน';
          default: return 'สาธารณะ';
@@ -250,6 +237,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
       setIsEditMode(false);
       setEditingDiaryId(null);
       setIsDeletingFile(null);
+      setBackdateError(null);
    };
 
    const handleContentChange = (html: string, delta: unknown) => {
@@ -334,6 +322,19 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
 
+      if (date && !isEditMode) {
+         const validation = validateBackdateLimit(date);
+         if (!validation.isValid) {
+            Swal.fire({
+               icon: "error",
+               title: "ไม่สามารถบันทึกได้",
+               text: validation.errorMessage,
+               confirmButtonText: 'ตกลง',
+            });
+            return;
+         }
+      }
+
       if (!content.trim() || content === '<p><br></p>') {
          Swal.fire({
             icon: "warning",
@@ -353,6 +354,8 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
          });
          return;
       }
+
+      console.log('fetch new diary userId :', userId);
 
       setIsLoading(true);
       setUploadProgress(0);
@@ -571,6 +574,17 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
                </Box>
 
                <Box sx={{ p: 3 }}>
+                  {/* แสดงข้อผิดพลาดเมื่อบันทึกย้อนหลังเกินกำหนด */}
+                  {backdateError && (
+                     <Alert
+                        severity="error"
+                        icon={<WarningIcon />}
+                        sx={{ mb: 2 }}
+                     >
+                        {backdateError}
+                     </Alert>
+                  )}
+
                   <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
                      รายละเอียด
                   </Typography>
@@ -633,10 +647,6 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
                            <MenuItem onClick={() => handleShareSelect('everyone')}>
                               <ListItemIcon><PublicIcon fontSize="small" /></ListItemIcon>
                               <ListItemText>สาธารณะ</ListItemText>
-                           </MenuItem>
-                           <MenuItem onClick={() => handleShareSelect('someone')}>
-                              <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-                              <ListItemText>เจาะจง</ListItemText>
                            </MenuItem>
                            <MenuItem onClick={() => handleShareSelect('teacher')}>
                               <ListItemIcon><SchoolIcon fontSize="small" /></ListItemIcon>
@@ -810,16 +820,16 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
                      </Button>
                      <Button
                         onClick={handleSubmit}
-                        disabled={isLoading || isDeletingFile !== null}
+                        disabled={isLoading || isDeletingFile !== null || backdateError !== null}
                         sx={{
-                           backgroundColor: '#4caf50',
+                           backgroundColor: backdateError ? '#ccc' : '#4caf50',
                            color: '#fff',
                            px: 6,
                            py: 1,
                            borderRadius: 5,
                            textTransform: 'none',
                            '&:hover': {
-                              backgroundColor: '#45a049',
+                              backgroundColor: backdateError ? '#ccc' : '#45a049',
                            },
                            '&:disabled': {
                               backgroundColor: '#ccc',

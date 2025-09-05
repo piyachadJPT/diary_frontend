@@ -72,13 +72,13 @@ interface Diary {
 }
 
 export default function DiaryPage({ params }: { params: Promise<{ date: string }> }) {
-   const { date } = React.use(params);
+   const [date, setDate] = useState<string>('');
+   const [paramsLoaded, setParamsLoaded] = useState(false);
    const { data: session, status } = useSession();
    const [userId, setUserId] = useState<number | null>(null);
    const [diaries, setDiaries] = useState<Diary[]>([]);
    const [isLoading, setIsLoading] = useState<boolean>(true);
    const [error, setError] = useState<string | null>(null);
-
    const [editingDiary, setEditingDiary] = useState<Diary | null>(null);
 
    const statusIcons = {
@@ -111,10 +111,22 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
 
    type StatusKey = keyof typeof statusIcons;
 
+   useEffect(() => {
+      const loadParams = async () => {
+         try {
+            const resolvedParams = await params;
+            setDate(resolvedParams.date);
+            setParamsLoaded(true);
+         } catch (error) {
+            console.error('Error loading params:', error);
+         }
+      };
+      loadParams();
+   }, [params]);
+
    const getShareText = (IsShared: string) => {
       switch (IsShared) {
          case 'everyone': return 'สาธารณะ';
-         case 'someone': return 'เจาะจง';
          case 'teacher': return 'อาจารย์เท่านั้น';
          case 'personal': return 'เฉพาะฉัน';
          default: return 'แชร์สาธารณะ';
@@ -124,7 +136,6 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
    const getShareIcon = (IsShared: string) => {
       switch (IsShared) {
          case 'everyone': return <Language fontSize="small" />;
-         case 'someone': return <Group fontSize="small" />;
          case 'teacher': return <School fontSize="small" />;
          case 'personal': return <Lock fontSize="small" />;
          default: return <Language fontSize="small" />;
@@ -139,7 +150,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       return null;
    };
 
-   const formatDateForAPI = (dateString: string): string => {
+   const formatDateForAPI = useCallback((dateString: string): string => {
       try {
          const dateObj = new Date(dateString);
          return dateObj.toISOString().split('T')[0];
@@ -147,9 +158,9 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
          console.error('Error formatting date:', error);
          return dateString;
       }
-   };
+   }, []);
 
-   async function getProfileFromToken() {
+   const getProfileFromToken = useCallback(async () => {
       const token = localStorage.getItem('token');
       if (!token) return null;
 
@@ -174,7 +185,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
          localStorage.removeItem('token');
          return null;
       }
-   }
+   }, []);
 
    useEffect(() => {
       const fetchUser = async () => {
@@ -205,32 +216,19 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       };
 
       fetchUser();
-   }, [session, status]);
-
-   console.log("userId in Date page:", userId)
+   }, [session, status, getProfileFromToken]);
 
    const fetchDiaries = useCallback(async () => {
-      if (!userId || !date) {
+
+      if (!userId || !date || !paramsLoaded) {
          setIsLoading(false);
          return;
       }
 
       try {
          setIsLoading(true);
-
          const originalDate = date;
          const formattedDate = formatDateForAPI(date);
-
-         console.log('Original date:', originalDate);
-         console.log('Formatted date:', formattedDate);
-         console.log('User ID:', userId);
-
-         const allDiariesRes = await fetchWithBase(`/api/diary?StudentID=${userId}`);
-
-         if (allDiariesRes.ok) {
-            const allDiariesResponse = await allDiariesRes.json();
-            console.log('All diaries for user:', allDiariesResponse);
-         }
 
          const dateFormats = [
             originalDate,
@@ -239,34 +237,41 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
             new Date(date).toLocaleDateString('en-CA'),
          ];
 
-         console.log('Trying date formats:', dateFormats);
-
          let finalResponse = null;
 
          for (const dateFormat of dateFormats) {
             try {
-               console.log(`Trying API call with date: ${dateFormat}`);
-               const res = await fetchWithBase(`/api/diary?DiaryDate=${encodeURIComponent(dateFormat)}&StudentID=${userId}`);
-
+               const apiUrl = `/api/diary?DiaryDate=${encodeURIComponent(dateFormat)}&StudentID=${userId}`;
+               const res = await fetchWithBase(apiUrl);
                if (res.ok) {
-                  const response = await res.json();
-                  console.log(`API Response for ${dateFormat}:`, response);
 
-                  if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-                     finalResponse = response;
-                     console.log(`Found data with date format: ${dateFormat}`);
+                  const response = await res.json();
+                  let dataArray = [];
+
+                  if (Array.isArray(response)) {
+                     dataArray = response;
+                  } else if (response.data && Array.isArray(response.data)) {
+                     dataArray = response.data;
+                  } else if (response.diaries && Array.isArray(response.diaries)) {
+                     dataArray = response.diaries;
+                  }
+
+
+                  if (dataArray.length > 0) {
+                     finalResponse = { data: dataArray };
                      break;
                   }
                } else {
-                  console.log(`API call failed for ${dateFormat}:`, res.status, res.statusText);
+                  const errorText = await res.text();
+                  console.log('Error response:', errorText);
                }
             } catch (error) {
                console.log(`Error trying date format ${dateFormat}:`, error);
             }
          }
 
-         if (finalResponse) {
-            setDiaries(Array.isArray(finalResponse.data) ? finalResponse.data : []);
+         if (finalResponse && finalResponse.data) {
+            setDiaries(finalResponse.data);
          } else {
             console.log('No data found for any date format');
             setDiaries([]);
@@ -274,16 +279,18 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
 
       } catch (err) {
          console.error('Error fetching diaries:', err);
-         setError('ไม่สามารถดึงข้อมูลบันทึกได้: ' + err);
+         setError('ไม่สามารถดึงข้อมูลบันทึกได้: ' + String(err));
          setDiaries([]);
       } finally {
          setIsLoading(false);
       }
-   }, [userId, date]);
+   }, [userId, date, paramsLoaded, formatDateForAPI]);
 
    useEffect(() => {
-      fetchDiaries();
-   }, [fetchDiaries]);
+      if (paramsLoaded && userId && date) {
+         fetchDiaries();
+      }
+   }, [fetchDiaries, paramsLoaded, userId, date]);
 
    const formatDate = (dateString: string): string => {
       try {
@@ -313,10 +320,10 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       setEditingDiary(diary);
    };
 
-   const handleEditComplete = () => {
+   const handleEditComplete = useCallback(() => {
       setEditingDiary(null);
       fetchDiaries();
-   };
+   }, [fetchDiaries]);
 
    const handleDelete = async (id: number) => {
       const result = await Swal.fire({
@@ -367,6 +374,16 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
       }
    };
 
+   if (!paramsLoaded) {
+      return (
+         <DiatyLayout>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+               <CircularProgress />
+            </Box>
+         </DiatyLayout>
+      );
+   }
+
    if (status === 'loading' || isLoading) {
       return (
          <DiatyLayout>
@@ -398,17 +415,6 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
                            display: 'flex',
                            alignItems: 'center',
                         }}>
-                           {/* <Avatar
-                              src={diary.Student?.Image || `${withBasePath("/default-avatar.png")}`}
-                              alt={diary.Student?.Name || 'Unknown User'}
-                              sx={{ width: 55, height: 55, mr: 2 }}
-                           >
-                              <img
-                                 src=`${withBasePath("/default-avatar.png")}`
-                                 alt=""
-                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                           </Avatar> */}
                            <Avatar
                               src={diary.Student?.Image || `${withBasePath("/default-avatar.png")}`}
                               alt={diary.Student?.Name || 'ไม่ระบุชื่อ'}
@@ -546,6 +552,7 @@ export default function DiaryPage({ params }: { params: Promise<{ date: string }
             )}
 
             <NewDiary
+               userId={userId}
                onDiarySaved={fetchDiaries}
                editDiary={editingDiary}
                onEditComplete={handleEditComplete}
