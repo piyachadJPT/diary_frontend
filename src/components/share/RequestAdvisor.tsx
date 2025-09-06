@@ -85,7 +85,15 @@ export default function RequestAdvisor({ userId, openRequestAdvisor, onClose }: 
                showConfirmButton: false,
                timer: 1500,
             })
-         } else {
+         } else if (!res.ok && data.message === 'คุณเป็นนิสิตในการดูแลอาจารย์ท่านนี้แล้ว') {
+            Swal.fire({
+               icon: 'error',
+               text: 'คุณเป็นนิสิตในการดูแลอาจารย์ท่านนี้แล้ว',
+               showConfirmButton: false,
+               timer: 1500,
+            })
+         }
+         else {
             console.error('Failed to send advisor request');
             Swal.fire({
                icon: 'error',

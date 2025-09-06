@@ -308,14 +308,14 @@ const Warn = ({ advisorId }: AdvisorProps) => {
          }
 
          sessionStorage.setItem('studentId', String(id));
-         router.push(`/teacher/${diaryDate}`);
+
+         setTimeout(() => {
+            router.push(`/teacher/${diaryDate}`);
+         }, 100);
       } catch (error) {
          console.error("Error marking notification as read:", error);
-         sessionStorage.setItem('studentId', String(id));
-         router.push(`/teacher/${diaryDate}`);
       }
    };
-
 
    const containerStyles = {
       height: '32vh',

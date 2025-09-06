@@ -64,10 +64,6 @@ export default function AddNewStudent({ onClose, advisorId, onStudentAdvisorSave
       setLoading(true);
 
       try {
-         console.log('Sending data:', {
-            email,
-            advisorId,
-         });
          const response = await fetchWithBase('/api/student', {
             method: 'POST',
             headers: {
