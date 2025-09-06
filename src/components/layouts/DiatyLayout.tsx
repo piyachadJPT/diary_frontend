@@ -37,6 +37,8 @@ import Swal from 'sweetalert2';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl";
 import { getUrlWithBase } from "@/app/unit/getUrlWithBase";
 import ViewAllStudent from "@/components/share/ViewAllStudent";
+import SchoolIcon from '@mui/icons-material/School';
+import RequestAdvisor from "../share/RequestAdvisor";
 
 interface DiatyLayoutProps {
    children: ReactNode;
@@ -74,6 +76,7 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
    const [currentDate, setCurrentDate] = useState(new Date());
    const [open, setOpen] = useState(false);
+   const [openRequestAdvisor, setOpenRequestAdvisor] = useState(false);
 
    async function getProfileFromToken() {
       const token = localStorage.getItem('token');
@@ -820,6 +823,22 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                         </MenuItem>
                         <Divider sx={{ my: 0.5 }} />
                         <MenuItem
+                           onClick={() => setOpenRequestAdvisor(true)}
+                           sx={{
+                              fontSize: '14px',
+                              py: 1.5,
+                              '&:hover': {
+                                 bgcolor: '#f8f9fa',
+                              },
+                           }}
+                        >
+                           <ListItemIcon sx={{ minWidth: 32 }}>
+                              <SchoolIcon fontSize="small" sx={{ color: '#6b7280' }} />
+                           </ListItemIcon>
+                           คำขอเพิ่มอาจารย์ที่ปรีกษา
+                        </MenuItem>
+                        <Divider sx={{ my: 0.5 }} />
+                        <MenuItem
                            onClick={handleSignOut}
                            sx={{
                               fontSize: '14px',
@@ -920,6 +939,11 @@ const DiatyLayout: React.FC<DiatyLayoutProps> = ({ children, selectedDate }) => 
                userId={userId}
                open={open}
                onClose={() => setOpen(false)}
+            />
+            <RequestAdvisor
+               userId={userId}
+               openRequestAdvisor={openRequestAdvisor}
+               onClose={() => setOpenRequestAdvisor(false)}
             />
          </Box>
       </ThemeRegistry>

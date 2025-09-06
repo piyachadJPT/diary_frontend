@@ -633,7 +633,7 @@ const Student = ({ advisorId }: StudentProps) => {
                   },
                }}
             >
-               {/* ส่วนแสดงกลุ่ม */}
+               {/* แสดงกลุ่ม */}
                <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                      <Typography variant="h6" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
@@ -855,7 +855,7 @@ const Student = ({ advisorId }: StudentProps) => {
             </Box>
          </Paper>
 
-         {/* สำหรับเพิ่มนิสิตใหม่ */}
+         {/* เพิ่มนิสิตใหม่ */}
          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
             <AddNewStudent
                advisorId={advisorId}
@@ -864,7 +864,7 @@ const Student = ({ advisorId }: StudentProps) => {
             />
          </Dialog>
 
-         {/* สำหรับสร้างกลุ่มใหม่ */}
+         {/* สร้างกลุ่มใหม่ */}
          <CreateGroupDialog
             open={openCreateGroup}
             onClose={handleCloseCreateGroup}
@@ -872,7 +872,7 @@ const Student = ({ advisorId }: StudentProps) => {
             onGroupCreated={fetchAllData}
          />
 
-         {/* สำหรับเพิ่มนิสิตเข้ากลุ่ม */}
+         {/* เพิ่มนิสิตเข้ากลุ่ม */}
          <Dialog open={openAddToGroup} onClose={handleCloseAddToGroup} maxWidth="sm" fullWidth>
             <Fade in timeout={200}>
                <Box

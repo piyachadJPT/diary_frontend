@@ -574,7 +574,7 @@ export default function NewDiary({ onDiarySaved, editDiary, onEditComplete, para
                </Box>
 
                <Box sx={{ p: 3 }}>
-                  {/* แสดงข้อผิดพลาดเมื่อบันทึกย้อนหลังเกินกำหนด */}
+                  {/* แสดงข้อผิดพลาดเมื่อบันทึกย้อนหลังเกิน */}
                   {backdateError && (
                      <Alert
                         severity="error"

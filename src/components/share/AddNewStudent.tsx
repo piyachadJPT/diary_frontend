@@ -188,21 +188,6 @@ export default function AddNewStudent({ onClose, advisorId, onStudentAdvisorSave
                         '&:hover': {
                            backgroundColor: 'rgba(0, 0, 0, 0.03)',
                         },
-                        '&.Mui-focused': {
-                           backgroundColor: '#ffffff',
-                           boxShadow: '0 0 0 3px rgba(156, 39, 176, 0.1)',
-                        },
-                        '& fieldset': {
-                           borderColor: 'rgba(0, 0, 0, 0.12)',
-                           transition: 'all 0.3s ease',
-                        },
-                        '&:hover fieldset': {
-                           borderColor: 'rgba(0, 0, 0, 0.2)',
-                        },
-                        '&.Mui-focused fieldset': {
-                           borderColor: '#7E57C2',
-                           borderWidth: '2px',
-                        },
                      },
                      '& .MuiInputLabel-root': {
                         color: '#666',

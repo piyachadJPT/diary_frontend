@@ -28,8 +28,8 @@ import {
     LogoutOutlined,
 } from '@mui/icons-material';
 import Swal from 'sweetalert2';
-import ApproveUserPopup from '@/components/share/ApproveUserPopup';
 import { fetchWithBase } from "@/app/unit/fetchWithUrl";
+import ApproveStudent from "../share/ApproveStudent";
 
 interface TeacherLayoutProps {
     children: ReactNode;
@@ -53,6 +53,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
     const searchParams = useSearchParams();
     const theme = useTheme();
     const [user, setUser] = useState<User | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [mobileOpen, setMobileOpen] = useState(false);
     const [desktopOpen, setDesktopOpen] = useState(false);
@@ -100,7 +101,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                     const data = await res.json();
                     setUser(data);
                     setRole(data.Role)
-
+                    setUserId(data.id || data.ID);
                 } catch (error) {
                     console.error('Error fetching user:', error);
                 }
@@ -111,6 +112,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                 if (profile) {
                     setUser(profile);
                     setRole(profile.Role || profile.role)
+                    setUserId(profile.id || profile.ID);
                 }
             }
         }
@@ -379,7 +381,7 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                                     <ListItemIcon sx={{ minWidth: 32 }}>
                                         <Person fontSize="small" sx={{ color: '#9e9e9e' }} />
                                     </ListItemIcon>
-                                    อนุมัติผู้ใช้ใหม่
+                                    อนุมัติคำขอนิสิต
                                 </MenuItem>
                                 <Divider sx={{ my: 0.5 }} />
                                 <MenuItem
@@ -424,7 +426,8 @@ const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children, selectedDate })
                     </Box>
                 </Box>
 
-                <ApproveUserPopup
+                <ApproveStudent
+                    adviserId={userId}
                     open={openApprovePopup}
                     onClose={handleCloseApprovePopup}
                 />
